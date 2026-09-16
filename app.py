@@ -631,10 +631,23 @@ def get_exercises_data():
     if _CACHED_EXERCISES_DATA is not None:
         return _CACHED_EXERCISES_DATA
     p = BASE_DIR / "data" / "exercises.json"
+    if not p.exists():
+        p = Path.cwd() / "data" / "exercises.json"
     if p.exists():
-        with open(p, 'r', encoding='utf-8') as f:
-            _CACHED_EXERCISES_DATA = json.load(f)
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                _CACHED_EXERCISES_DATA = json.load(f)
+                return _CACHED_EXERCISES_DATA
+        except Exception:
+            pass
+    # Database fallback if file is not bundled or accessible in serverless environment
+    try:
+        db_exercises = Exercise.query.order_by(Exercise.id).all()
+        if db_exercises:
+            _CACHED_EXERCISES_DATA = [ex.to_dict() for ex in db_exercises]
             return _CACHED_EXERCISES_DATA
+    except Exception:
+        pass
     return []
 
 def get_foods_data():
@@ -642,10 +655,23 @@ def get_foods_data():
     if _CACHED_FOODS_DATA is not None:
         return _CACHED_FOODS_DATA
     p = BASE_DIR / "data" / "foods.json"
+    if not p.exists():
+        p = Path.cwd() / "data" / "foods.json"
     if p.exists():
-        with open(p, 'r', encoding='utf-8') as f:
-            _CACHED_FOODS_DATA = json.load(f)
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                _CACHED_FOODS_DATA = json.load(f)
+                return _CACHED_FOODS_DATA
+        except Exception:
+            pass
+    # Database fallback if file is not bundled or accessible in serverless environment
+    try:
+        db_foods = Food.query.order_by(Food.id).all()
+        if db_foods:
+            _CACHED_FOODS_DATA = [fd.to_dict() for fd in db_foods]
             return _CACHED_FOODS_DATA
+    except Exception:
+        pass
     return []
 
 def get_all_user_foods(user=None):
@@ -1443,8 +1469,6 @@ def onboarding():
             except Exception:
                 return jsonify({"status": "error", "message": "Please enter a valid daily food budget."}), 400
 
-            profile.onboarding_completed = True
-
             # Clear old preferences
             UserEquipment.query.filter_by(user_id=user.id).delete()
             UserFoodPreference.query.filter_by(user_id=user.id).delete()
@@ -1488,6 +1512,7 @@ def onboarding():
                 db.session.add(w_plan)
                 db.session.commit()
 
+                valid_ex_ids = {e[0] for e in db.session.query(Exercise.id).all()}
                 for day in weekly_workout:
                     w_day = WorkoutDay(
                         workout_plan_id=w_plan.id,
@@ -1503,9 +1528,18 @@ def onboarding():
                     db.session.commit()
 
                     for idx, ex in enumerate(day["exercises"]):
+                        target_ex_id = ex.get("exercise_id")
+                        if target_ex_id is not None:
+                            try:
+                                target_ex_id = int(target_ex_id)
+                                if target_ex_id not in valid_ex_ids:
+                                    target_ex_id = None
+                            except (ValueError, TypeError):
+                                target_ex_id = None
+
                         w_ex = WorkoutExercise(
                             workout_day_id=w_day.id,
-                            exercise_id=ex["exercise_id"],
+                            exercise_id=target_ex_id,
                             name=ex["name"],
                             category=ex["category"],
                             sets=ex["sets"],
@@ -1526,6 +1560,11 @@ def onboarding():
             except Exception as w_err:
                 app.logger.error(f"Workout generation error: {w_err}", exc_info=True)
                 db.session.rollback()
+                try:
+                    WorkoutPlan.query.filter_by(user_id=user.id).delete()
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
                 return jsonify({"status": "error", "message": "We couldn't generate your workout plan. Please try again."}), 400
 
             # Generate food
@@ -1585,6 +1624,9 @@ def onboarding():
                 fat_consumed=round(fat, 1)
             )
             db.session.add(rec)
+            
+            # Mark onboarding completed now that all generation succeeded
+            profile.onboarding_completed = True
             db.session.commit()
 
             return jsonify({"status": "success"})
@@ -2859,6 +2901,7 @@ def api_regenerate_plan():
         db.session.add(w_plan)
         db.session.commit()
 
+        valid_ex_ids = {e[0] for e in db.session.query(Exercise.id).all()}
         for day in weekly_workout:
             w_day = WorkoutDay(
                 workout_plan_id=w_plan.id,
@@ -2874,9 +2917,18 @@ def api_regenerate_plan():
             db.session.commit()
 
             for idx, ex in enumerate(day["exercises"]):
+                target_ex_id = ex.get("exercise_id")
+                if target_ex_id is not None:
+                    try:
+                        target_ex_id = int(target_ex_id)
+                        if target_ex_id not in valid_ex_ids:
+                            target_ex_id = None
+                    except (ValueError, TypeError):
+                        target_ex_id = None
+
                 w_ex = WorkoutExercise(
                     workout_day_id=w_day.id,
-                    exercise_id=ex["exercise_id"],
+                    exercise_id=target_ex_id,
                     name=ex["name"],
                     category=ex["category"],
                     sets=ex["sets"],

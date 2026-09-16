@@ -888,21 +888,6 @@ def run_migrations():
         except Exception:
             db.session.rollback()
 
-# Run database setup & migrations automatically on application boot
-with app.app_context():
-    try:
-        run_migrations()
-        try:
-            if Exercise.query.count() == 0:
-                seed_exercises_table()
-            if Food.query.count() == 0:
-                seed_foods_table()
-        except Exception as _seed_err:
-            db.session.rollback()
-            print(f"[SEED WARNING] Auto-seed error: {_seed_err}")
-    except Exception as _db_init_err:
-        db.session.rollback()
-        print(f"[MIGRATION WARNING] Auto-migration error: {_db_init_err}")
 
 def validate_media_path(path_str):
     """
@@ -1268,8 +1253,7 @@ def init_app_database(app_instance):
             print(f"[DB INIT WARNING] {e}")
         print_db_debug_info()
 
-# Automatic safe initialization on application startup
-init_app_database(app)
+
 
 @app.before_request
 def ensure_tables_exist():

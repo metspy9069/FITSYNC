@@ -10,13 +10,27 @@
       <p class="text-xs text-slate-400 mt-1">Check off exercise sets, view graphical demonstrations, or pick a custom single-muscle workout on-demand.</p>
     </div>
     
-    <div class="flex flex-wrap items-center gap-3">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        href="{{ url_for('workout_plan') }}"
+        class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-2xl shadow-sm transition-all hover:text-white"
+      >
+        <i data-lucide="calendar-range" class="h-4 w-4 text-emerald-400"></i>
+        <span>Weekly Plan</span>
+      </a>
+      <a
+        href="{{ url_for('form_check') }}"
+        class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 font-bold text-xs px-3.5 py-2.5 rounded-2xl shadow-sm transition-all hover:text-white"
+      >
+        <i data-lucide="camera" class="h-4 w-4 text-cyan-400"></i>
+        <span>AI Form Check</span>
+      </a>
       <button
         onclick="openCustomWorkoutModal()"
         class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs px-4 py-2.5 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 hover:scale-[1.02]"
       >
         <i data-lucide="target" class="h-4 w-4"></i>
-        <span>🎯 Choose Today's Workout Focus</span>
+        <span>🎯 Custom Focus</span>
       </button>
 
       <!-- Weekday Selection Tabs -->

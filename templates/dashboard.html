@@ -355,37 +355,56 @@
       FitSync AI synchronizes your target nutritional allocations with dynamic exercise schedules. Tap any hub shortcut to quickly jump to workout routines, diet plans, library demonstrations, or analytics.
     </p>
 
-    <!-- Quick Actions Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5 text-xs text-center font-bold text-slate-300">
-      <a href="{{ url_for('today_workout') }}" class="p-4 bg-slate-950/60 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/40 rounded-2xl transition-all flex flex-col items-center gap-2.5 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+    <!-- Quick Actions Grid (All Core Hub Shortcuts) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-xs text-center font-bold text-slate-300">
+      <a href="{{ url_for('today_workout') }}" class="p-3.5 bg-slate-950/60 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
         <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl group-hover:scale-110 transition-transform">
-          <i data-lucide="dumbbell" class="h-5 w-5"></i>
+          <i data-lucide="dumbbell" class="h-4.5 w-4.5"></i>
         </div>
-        <span>Today's Workout</span>
+        <span class="text-[11px] leading-tight">Today's Workout</span>
       </a>
-      <a href="{{ url_for('nutrition') }}" class="p-4 bg-slate-950/60 hover:bg-teal-500/10 border border-slate-800 hover:border-teal-500/40 rounded-2xl transition-all flex flex-col items-center gap-2.5 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+      <a href="{{ url_for('workout_plan') }}" class="p-3.5 bg-slate-950/60 hover:bg-teal-500/10 border border-slate-800 hover:border-teal-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
         <div class="p-2.5 bg-teal-500/10 text-teal-400 rounded-xl group-hover:scale-110 transition-transform">
-          <i data-lucide="apple" class="h-5 w-5"></i>
+          <i data-lucide="calendar-range" class="h-4.5 w-4.5"></i>
         </div>
-        <span>Meal Plan</span>
+        <span class="text-[11px] leading-tight">Weekly Plan</span>
       </a>
-      <a href="{{ url_for('exercises') }}" class="p-4 bg-slate-950/60 hover:bg-blue-500/10 border border-slate-800 hover:border-blue-500/40 rounded-2xl transition-all flex flex-col items-center gap-2.5 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
-        <div class="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl group-hover:scale-110 transition-transform">
-          <i data-lucide="compass" class="h-5 w-5"></i>
+      <a href="{{ url_for('form_check') }}" class="p-3.5 bg-slate-950/60 hover:bg-cyan-500/10 border border-slate-800 hover:border-cyan-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm relative">
+        <span class="absolute top-1.5 right-1.5 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">3D</span>
+        <div class="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-xl group-hover:scale-110 transition-transform">
+          <i data-lucide="camera" class="h-4.5 w-4.5"></i>
         </div>
-        <span>Exercise Library</span>
+        <span class="text-[11px] leading-tight">AI Form Check</span>
       </a>
-      <a href="{{ url_for('progress') }}" class="p-4 bg-slate-950/60 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/40 rounded-2xl transition-all flex flex-col items-center gap-2.5 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+      <a href="{{ url_for('nutrition') }}" class="p-3.5 bg-slate-950/60 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
         <div class="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl group-hover:scale-110 transition-transform">
-          <i data-lucide="line-chart" class="h-5 w-5"></i>
+          <i data-lucide="apple" class="h-4.5 w-4.5"></i>
         </div>
-        <span>Analytics</span>
+        <span class="text-[11px] leading-tight">Meal Plan</span>
       </a>
-      <a href="{{ url_for('settings') }}" class="p-4 bg-slate-950/60 hover:bg-purple-500/10 border border-slate-800 hover:border-purple-500/40 rounded-2xl transition-all flex flex-col items-center gap-2.5 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm col-span-2 md:col-span-1">
-        <div class="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl group-hover:scale-110 transition-transform">
-          <i data-lucide="settings" class="h-5 w-5"></i>
+      <a href="{{ url_for('exercises') }}" class="p-3.5 bg-slate-950/60 hover:bg-blue-500/10 border border-slate-800 hover:border-blue-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+        <div class="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl group-hover:scale-110 transition-transform">
+          <i data-lucide="book-open" class="h-4.5 w-4.5"></i>
         </div>
-        <span>Settings</span>
+        <span class="text-[11px] leading-tight">Exercise Library</span>
+      </a>
+      <a href="{{ url_for('ai_coach_page') }}" class="p-3.5 bg-slate-950/60 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+        <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl group-hover:scale-110 transition-transform">
+          <i data-lucide="bot" class="h-4.5 w-4.5"></i>
+        </div>
+        <span class="text-[11px] leading-tight">AI Coach</span>
+      </a>
+      <a href="{{ url_for('progress') }}" class="p-3.5 bg-slate-950/60 hover:bg-violet-500/10 border border-slate-800 hover:border-violet-500/40 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+        <div class="p-2.5 bg-violet-500/10 text-violet-400 rounded-xl group-hover:scale-110 transition-transform">
+          <i data-lucide="trending-up" class="h-4.5 w-4.5"></i>
+        </div>
+        <span class="text-[11px] leading-tight">Analytics</span>
+      </a>
+      <a href="{{ url_for('settings') }}" class="p-3.5 bg-slate-950/60 hover:bg-slate-700/40 border border-slate-800 hover:border-slate-600 rounded-2xl transition-all flex flex-col items-center gap-2 text-slate-200 hover:text-white group hover:-translate-y-0.5 shadow-sm">
+        <div class="p-2.5 bg-slate-800 text-slate-300 rounded-xl group-hover:scale-110 transition-transform">
+          <i data-lucide="settings" class="h-4.5 w-4.5"></i>
+        </div>
+        <span class="text-[11px] leading-tight">Settings</span>
       </a>
     </div>
   </section>

@@ -1312,10 +1312,15 @@ def get_current_user():
 def is_user_onboarded(user):
     if not user:
         return False
+    if session.get('is_onboarded') is True:
+        return True
     profile = UserProfile.query.filter_by(user_id=user.id).first()
     if not profile:
         return False
-    return bool(profile.onboarding_completed)
+    onboarded = bool(profile.onboarding_completed)
+    if onboarded:
+        session['is_onboarded'] = True
+    return onboarded
 
 def require_onboarded_user():
     user = get_current_user()
@@ -1405,7 +1410,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.pop('user_id', None)
+    session.clear()
     flash("Successfully logged out.", "success")
     return redirect(url_for("login"))
 
@@ -1628,6 +1633,7 @@ def onboarding():
             # Mark onboarding completed now that all generation succeeded
             profile.onboarding_completed = True
             db.session.commit()
+            session['is_onboarded'] = True
 
             return jsonify({"status": "success"})
         except Exception as e:
@@ -1783,17 +1789,18 @@ def form_check():
     if redir:
         return redir
     
-    all_exercises = Exercise.query.order_by(Exercise.name).all()
+    all_exercises = sorted(get_exercises_data(), key=lambda x: x.get('name', ''))
     exercise_id = request.args.get("exercise_id", type=int)
     ex_slug = request.args.get("exercise", type=str)
     
     selected_ex = None
     if exercise_id:
-        selected_ex = db.session.get(Exercise, exercise_id)
+        selected_ex = next((ex for ex in all_exercises if ex.get("id") == exercise_id), None)
     elif ex_slug:
         normalized = ex_slug.lower().replace('-', '_')
         for ex in all_exercises:
-            if ex.name.lower().replace(' ', '_').replace('-', '_') == normalized or normalized in ex.name.lower():
+            name_norm = ex.get('name', '').lower().replace(' ', '_').replace('-', '_')
+            if name_norm == normalized or normalized in name_norm:
                 selected_ex = ex
                 break
 
@@ -3163,6 +3170,7 @@ def api_save_profile():
             profile = UserProfile(user_id=user.id)
             db.session.add(profile)
         profile.onboarding_completed = True
+        session['is_onboarded'] = True
             
         # Update core profile attributes if passed
         if "name" in data and data["name"]:

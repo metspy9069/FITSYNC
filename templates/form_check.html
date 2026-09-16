@@ -301,7 +301,16 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- 3D Graphics & Kinematic Avatar Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="{{ url_for('static', filename='js/exercise_3d_config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/exercise_3d_viewer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/exercise_motion_player.js') }}"></script>
+<!-- MediaPipe Pose JS Engine & FitSync AI Form Checker -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/ai_form_checker.js') }}"></script>
 <script>
   let activeEx = 'Squat';
   let activeSlug = 'squat';

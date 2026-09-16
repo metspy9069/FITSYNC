@@ -54,6 +54,118 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row font-sans selection:bg-emerald-500 selection:text-white">
 
   {% if session.get('user_id') and request.path not in ['/onboarding', '/login', '/register'] %}
+  <!-- Mobile Top Header Bar -->
+  <header class="md:hidden sticky top-0 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 px-4 py-3 flex items-center justify-between select-none">
+    <div class="flex items-center gap-2.5">
+      <div class="p-2 bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 text-emerald-400 rounded-lg border border-emerald-500/30">
+        <i data-lucide="activity" class="h-5 w-5"></i>
+      </div>
+      <span class="font-black text-base tracking-tight text-white">FitSync <span class="text-emerald-400">AI</span></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button 
+        type="button" 
+        onclick="toggleGlobalTheme()" 
+        class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+        title="Toggle Theme"
+      >
+        <i data-lucide="sun-moon" class="h-4 w-4 text-emerald-400"></i>
+      </button>
+      <button 
+        type="button" 
+        onclick="toggleMobileDrawer()" 
+        class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+        title="Open Navigation Menu"
+        id="mobile-drawer-toggle-btn"
+      >
+        <i data-lucide="menu" class="h-4.5 w-4.5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Slide-out Drawer Overlay & Container -->
+  <div id="mobile-drawer-backdrop" onclick="toggleMobileDrawer()" class="md:hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <aside id="mobile-nav-drawer" class="md:hidden fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-900 text-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-800 flex flex-col shadow-2xl">
+    <div class="p-5 flex items-center justify-between border-b border-slate-800 select-none">
+      <div class="flex items-center gap-2.5">
+        <div class="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+          <i data-lucide="activity" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-base">FitSync <span class="text-emerald-400 font-black">AI</span></h2>
+          <p class="text-[9px] text-emerald-400 uppercase font-bold tracking-wider">Navigation Menu</p>
+        </div>
+      </div>
+      <button onclick="toggleMobileDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="x" class="h-5 w-5"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Drawer Links -->
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto select-none">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">Core Hub</p>
+      <a href="{{ url_for('dashboard') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/dashboard' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="layout-dashboard" class="h-4.5 w-4.5"></i>
+        Dashboard
+      </a>
+      <a href="{{ url_for('ai_coach_page') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/ai-coach' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <div class="flex items-center gap-3">
+          <i data-lucide="bot" class="h-4.5 w-4.5"></i>
+          AI Coach
+        </div>
+        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">AI Live</span>
+      </a>
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Workouts & Movement</p>
+      <a href="{{ url_for('today_workout') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/today-workout' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="dumbbell" class="h-4.5 w-4.5"></i>
+        Today's Workout
+      </a>
+      <a href="{{ url_for('workout_plan') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/workout-plan' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="calendar-range" class="h-4.5 w-4.5"></i>
+        Weekly Plan
+      </a>
+      <a href="{{ url_for('form_check') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/form-check' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <div class="flex items-center gap-3">
+          <i data-lucide="camera" class="h-4.5 w-4.5"></i>
+          AI Form Check
+        </div>
+        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">3D CV</span>
+      </a>
+      <a href="{{ url_for('exercises') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path in ['/exercises'] or request.path.startswith('/exercise/') else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="book-open" class="h-4.5 w-4.5"></i>
+        Exercise Library
+      </a>
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Diet & Analytics</p>
+      <a href="{{ url_for('nutrition') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/nutrition' or request.path.startswith('/meal/') else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="apple" class="h-4.5 w-4.5"></i>
+        Nutrition & Meals
+      </a>
+      <a href="{{ url_for('progress') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/progress' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="trending-up" class="h-4.5 w-4.5"></i>
+        Progress Analytics
+      </a>
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Account</p>
+      <a href="{{ url_for('profile') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/profile' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="user" class="h-4.5 w-4.5"></i>
+        Profile
+      </a>
+      <a href="{{ url_for('settings') }}" onclick="toggleMobileDrawer()" class="mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/settings' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="settings" class="h-4.5 w-4.5"></i>
+        Settings
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-slate-800">
+      <a href="{{ url_for('logout') }}" class="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
+        <i data-lucide="log-out" class="h-4.5 w-4.5"></i>
+        Logout
+      </a>
+    </div>
+  </aside>
+
   <!-- Desktop Sidebar -->
   <aside class="hidden md:flex flex-col w-64 bg-slate-900/95 backdrop-blur-2xl text-white min-h-screen border-r border-slate-800/80 shrink-0">
     <div class="p-6 flex items-center gap-3 border-b border-slate-800/80 select-none">
@@ -66,43 +178,64 @@
       </div>
     </div>
 
-    <nav class="flex-1 p-4 space-y-1.5">
-      <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/dashboard' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="layout-dashboard" class="h-4.5 w-4.5"></i>
-        Dashboard
+    <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto select-none">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">Core</p>
+      <a href="{{ url_for('dashboard') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/dashboard' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="layout-dashboard" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Dashboard</span>
       </a>
-      <a href="{{ url_for('ai_coach_page') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/ai-coach' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="bot" class="h-4.5 w-4.5"></i>
-        AI Coach
+      <a href="{{ url_for('ai_coach_page') }}" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/ai-coach' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <div class="flex items-center gap-3">
+          <i data-lucide="bot" class="h-4.5 w-4.5 shrink-0"></i>
+          <span>AI Coach</span>
+        </div>
+        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">AI</span>
       </a>
-      <a href="{{ url_for('today_workout') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path in ['/today-workout', '/workout-plan'] else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="dumbbell" class="h-4.5 w-4.5"></i>
-        Workout Plan
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Workouts & Training</p>
+      <a href="{{ url_for('today_workout') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/today-workout' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="dumbbell" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Today's Workout</span>
       </a>
-      <a href="{{ url_for('nutrition') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/nutrition' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="apple" class="h-4.5 w-4.5"></i>
-        Nutrition
+      <a href="{{ url_for('workout_plan') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/workout-plan' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="calendar-range" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Weekly Plan</span>
       </a>
-      <a href="{{ url_for('exercises') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path in ['/exercises'] or request.path.startswith('/exercise/') else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="book-open" class="h-4.5 w-4.5"></i>
-        Library
+      <a href="{{ url_for('form_check') }}" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/form-check' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <div class="flex items-center gap-3">
+          <i data-lucide="camera" class="h-4.5 w-4.5 shrink-0"></i>
+          <span>AI Form Check</span>
+        </div>
+        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">3D CV</span>
       </a>
-      <a href="{{ url_for('progress') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/progress' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="trending-up" class="h-4.5 w-4.5"></i>
-        Progress
+      <a href="{{ url_for('exercises') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path in ['/exercises'] or request.path.startswith('/exercise/') else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="book-open" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Exercise Library</span>
       </a>
-      <a href="{{ url_for('profile') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/profile' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="user" class="h-4.5 w-4.5"></i>
-        Profile
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Diet & Progress</p>
+      <a href="{{ url_for('nutrition') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/nutrition' or request.path.startswith('/meal/') else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="apple" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Nutrition & Meals</span>
       </a>
-      <a href="{{ url_for('settings') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/settings' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-        <i data-lucide="settings" class="h-4.5 w-4.5"></i>
-        Settings
+      <a href="{{ url_for('progress') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/progress' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="trending-up" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Progress</span>
+      </a>
+
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-3 pb-1">Account</p>
+      <a href="{{ url_for('profile') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/profile' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="user" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Profile</span>
+      </a>
+      <a href="{{ url_for('settings') }}" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' if request.path == '/settings' else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+        <i data-lucide="settings" class="h-4.5 w-4.5 shrink-0"></i>
+        <span>Settings</span>
       </a>
     </nav>
 
     <!-- Sidebar Theme Toggle & Logout -->
-    <div class="p-4 border-t border-slate-800 space-y-2">
+    <div class="p-4 border-t border-slate-800 space-y-2 select-none">
       <button 
         type="button"
         onclick="toggleGlobalTheme()" 
@@ -125,34 +258,30 @@
   </aside>
 
   <!-- Mobile Bottom Nav -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 text-white border-t border-slate-800 flex justify-around py-1.5 z-50 select-none">
-    <a href="{{ url_for('dashboard') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path == '/dashboard' else 'text-slate-400' }}">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl text-white border-t border-slate-800 flex justify-around items-center py-2 z-40 select-none shadow-2xl">
+    <a href="{{ url_for('dashboard') }}" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold {{ 'text-emerald-400 font-bold' if request.path == '/dashboard' else 'text-slate-400 hover:text-white' }}">
       <i data-lucide="layout-dashboard" class="h-4.5 w-4.5 mb-0.5"></i>
       Home
     </a>
-    <a href="{{ url_for('ai_coach_page') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path == '/ai-coach' else 'text-slate-400' }}">
-      <i data-lucide="bot" class="h-4.5 w-4.5 mb-0.5"></i>
-      AI Coach
-    </a>
-    <a href="{{ url_for('today_workout') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path in ['/today-workout', '/workout-plan'] else 'text-slate-400' }}">
+    <a href="{{ url_for('today_workout') }}" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold {{ 'text-emerald-400 font-bold' if request.path == '/today-workout' else 'text-slate-400 hover:text-white' }}">
       <i data-lucide="dumbbell" class="h-4.5 w-4.5 mb-0.5"></i>
-      Workout
+      Today
     </a>
-    <a href="{{ url_for('nutrition') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path == '/nutrition' else 'text-slate-400' }}">
+    <a href="{{ url_for('workout_plan') }}" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold {{ 'text-emerald-400 font-bold' if request.path == '/workout-plan' else 'text-slate-400 hover:text-white' }}">
+      <i data-lucide="calendar-range" class="h-4.5 w-4.5 mb-0.5"></i>
+      Plan
+    </a>
+    <a href="{{ url_for('form_check') }}" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold {{ 'text-cyan-400 font-bold' if request.path == '/form-check' else 'text-slate-400 hover:text-white' }}">
+      <i data-lucide="camera" class="h-4.5 w-4.5 mb-0.5"></i>
+      AI Form
+    </a>
+    <a href="{{ url_for('nutrition') }}" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold {{ 'text-emerald-400 font-bold' if request.path == '/nutrition' or request.path.startswith('/meal/') else 'text-slate-400 hover:text-white' }}">
       <i data-lucide="apple" class="h-4.5 w-4.5 mb-0.5"></i>
       Meals
     </a>
-    <a href="{{ url_for('progress') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path == '/progress' else 'text-slate-400' }}">
-      <i data-lucide="trending-up" class="h-4.5 w-4.5 mb-0.5"></i>
-      Progress
-    </a>
-    <a href="{{ url_for('profile') }}" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold {{ 'text-primary-400 font-bold' if request.path == '/profile' else 'text-slate-400' }}">
-      <i data-lucide="user" class="h-4.5 w-4.5 mb-0.5"></i>
-      Profile
-    </a>
-    <button type="button" onclick="toggleGlobalTheme()" class="flex flex-col items-center justify-center p-1.5 text-[9px] font-semibold text-slate-400 hover:text-white">
-      <i data-lucide="sun-moon" class="h-4.5 w-4.5 mb-0.5 text-emerald-400"></i>
-      Theme
+    <button type="button" onclick="toggleMobileDrawer()" class="mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold text-slate-400 hover:text-white">
+      <i data-lucide="menu" class="h-4.5 w-4.5 mb-0.5 text-emerald-400"></i>
+      More
     </button>
   </nav>
   {% endif %}
@@ -448,18 +577,240 @@
         navigator.serviceWorker.register('/static/sw.js').catch(err => console.log('SW Registration failed:', err));
       });
     }
+
+    /* ==========================================
+       Mobile Navigation Drawer Controller
+       ========================================== */
+    function toggleMobileDrawer() {
+      const drawer = document.getElementById('mobile-nav-drawer');
+      const backdrop = document.getElementById('mobile-drawer-backdrop');
+      if (drawer && backdrop) {
+        const isClosed = drawer.classList.contains('-translate-x-full');
+        if (isClosed) {
+          drawer.classList.remove('-translate-x-full');
+          backdrop.classList.remove('opacity-0', 'pointer-events-none');
+          backdrop.classList.add('opacity-100');
+        } else {
+          drawer.classList.add('-translate-x-full');
+          backdrop.classList.add('opacity-0', 'pointer-events-none');
+          backdrop.classList.remove('opacity-100');
+        }
+      }
+    }
+
+    /* ==========================================
+       FitSync Turbo Fast-Navigation Engine (SPA Swapping & Instant Transitions)
+       ========================================== */
+    (function() {
+      const cache = new Map();
+      let loadingBar = null;
+
+      function ensureLoadingBar() {
+        if (!loadingBar) {
+          loadingBar = document.createElement('div');
+          loadingBar.id = 'fast-nav-loader';
+          loadingBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#10b981,#06b6d4);width:0%;z-index:99999;transition:width 0.25s ease,opacity 0.25s ease;pointer-events:none;box-shadow:0 0 10px rgba(16,185,129,0.8);';
+          document.body.appendChild(loadingBar);
+        }
+      }
+
+      function startLoader() {
+        ensureLoadingBar();
+        loadingBar.style.opacity = '1';
+        loadingBar.style.width = '45%';
+      }
+
+      function finishLoader() {
+        if (loadingBar) {
+          loadingBar.style.width = '100%';
+          setTimeout(() => {
+            loadingBar.style.opacity = '0';
+            setTimeout(() => { loadingBar.style.width = '0%'; }, 250);
+          }, 150);
+        }
+      }
+
+      function shouldBypassTurbo(url) {
+        try {
+          const parsed = new URL(url, window.location.origin);
+          if (parsed.origin !== window.location.origin) return true;
+          const path = parsed.pathname;
+          // Bypass hardware-intensive camera/3D pages, export reports, and auth flow
+          if (path === '/form-check' || path.startsWith('/exercise/') || path.startsWith('/export/') || path === '/logout' || path === '/login' || path === '/register' || path === '/onboarding') {
+            return true;
+          }
+          if (window.location.pathname === '/form-check' || window.location.pathname.startsWith('/exercise/')) {
+            return true;
+          }
+          return false;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      function prefetch(url) {
+        if (!url || cache.has(url) || shouldBypassTurbo(url)) return;
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'FitSyncTurbo' } })
+          .then(res => {
+            if (res.ok && res.headers.get('content-type')?.includes('text/html')) {
+              return res.text().then(html => cache.set(url, { html, time: Date.now() }));
+            }
+          })
+          .catch(() => {});
+      }
+
+      async function navigateTo(url, pushState = true) {
+        if (shouldBypassTurbo(url)) {
+          window.location.href = url;
+          return;
+        }
+
+        startLoader();
+
+        try {
+          let html = null;
+          const cached = cache.get(url);
+          if (cached && (Date.now() - cached.time < 45000)) {
+            html = cached.html;
+          } else {
+            const res = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'FitSyncTurbo' } });
+            if (res.redirected) {
+              window.location.href = res.url;
+              return;
+            }
+            if (!res.ok) {
+              window.location.href = url;
+              return;
+            }
+            html = await res.text();
+            cache.set(url, { html, time: Date.now() });
+          }
+
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+
+          const currentMain = document.querySelector('main');
+          const newMain = doc.querySelector('main');
+
+          if (!currentMain || !newMain) {
+            window.location.href = url;
+            return;
+          }
+
+          if (doc.title) {
+            document.title = doc.title;
+          }
+
+          currentMain.innerHTML = newMain.innerHTML;
+          currentMain.className = newMain.className;
+
+          window.scrollTo(0, 0);
+
+          // Execute scripts in the swapped content
+          const scripts = newMain.querySelectorAll('script');
+          scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript);
+            newScript.remove();
+          });
+
+          if (pushState) {
+            window.history.pushState({ path: url }, '', url);
+          }
+
+          const parsed = new URL(url, window.location.origin);
+          updateActiveNavLinks(parsed.pathname);
+
+          if (window.lucide) {
+            lucide.createIcons();
+          }
+
+          const savedTheme = localStorage.getItem('fitsync_theme') || 'dark';
+          if (typeof updateThemeUI === 'function') {
+            updateThemeUI(savedTheme);
+          }
+
+          finishLoader();
+        } catch (err) {
+          window.location.href = url;
+        }
+      }
+
+      function updateActiveNavLinks(pathname) {
+        const links = document.querySelectorAll('a[href]');
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+          try {
+            const linkUrl = new URL(href, window.location.origin);
+            const isMatch = (linkUrl.pathname === pathname) || 
+              (linkUrl.pathname === '/exercises' && pathname.startsWith('/exercise/')) ||
+              (linkUrl.pathname === '/nutrition' && pathname.startsWith('/meal/'));
+
+            // Desktop links
+            if (link.classList.contains('nav-link')) {
+              if (isMatch) {
+                link.className = 'nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all bg-emerald-500 text-white shadow-md shadow-emerald-500/20';
+              } else {
+                link.className = 'nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:bg-slate-800 hover:text-white';
+              }
+            }
+
+            // Mobile drawer links
+            if (link.classList.contains('mobile-drawer-link')) {
+              if (isMatch) {
+                link.className = 'mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all bg-emerald-500 text-white shadow-md shadow-emerald-500/20';
+              } else {
+                link.className = 'mobile-drawer-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:bg-slate-800 hover:text-white';
+              }
+            }
+
+            // Mobile bottom nav links
+            if (link.classList.contains('mobile-nav-link')) {
+              if (isMatch) {
+                link.className = 'mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-bold text-emerald-400';
+              } else {
+                link.className = 'mobile-nav-link flex flex-col items-center justify-center px-2 py-1 text-[9px] font-semibold text-slate-400 hover:text-white';
+              }
+            }
+          } catch (e) {}
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || link.hasAttribute('download') || link.target === '_blank') return;
+        if (shouldBypassTurbo(href)) return;
+
+        try {
+          const linkUrl = new URL(href, window.location.origin);
+          if (linkUrl.origin === window.location.origin) {
+            e.preventDefault();
+            navigateTo(linkUrl.href);
+          }
+        } catch (e) {}
+      });
+
+      document.addEventListener('mouseover', (e) => {
+        const link = e.target.closest('a');
+        if (link && link.href) prefetch(link.href);
+      }, { passive: true });
+
+      document.addEventListener('touchstart', (e) => {
+        const link = e.target.closest('a');
+        if (link && link.href) prefetch(link.href);
+      }, { passive: true });
+
+      window.addEventListener('popstate', () => {
+        navigateTo(window.location.href, false);
+      });
+    })();
   </script>
   <script src="{{ url_for('static', filename='js/animation_engine_bridge.js') }}"></script>
-  <!-- 3D Graphics & Kinematic Demonstration Dependencies -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="{{ url_for('static', filename='js/exercise_3d_config.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/exercise_3d_viewer.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/exercise_motion_player.js') }}"></script>
-  <!-- MediaPipe Pose JS Engine & FitSync AI Form Checker -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-  <script src="{{ url_for('static', filename='js/ai_form_checker.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

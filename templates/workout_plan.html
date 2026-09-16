@@ -18,6 +18,10 @@
          class="flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition-colors">
         <i data-lucide="play" class="h-4 w-4"></i> Today's Workout
       </a>
+      <a href="{{ url_for('form_check') }}"
+         class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-sm transition-colors">
+        <i data-lucide="camera" class="h-4 w-4 text-cyan-400"></i> AI Form Check
+      </a>
       <button onclick="confirmRegenerate()"
          class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-colors">
         <i data-lucide="refresh-cw" class="h-4 w-4"></i> Regenerate Split

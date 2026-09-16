@@ -76,20 +76,14 @@ def get_effective_database_uri():
         except Exception as e:
             print(f"[DB WARNING] Failed to auto-route Supabase pooler: {e}")
 
-    # Proactively test remote connection with short timeout so app never crashes with 500 error
-    try:
-        test_engine = create_engine(url, connect_args={"timeout": 3})
-        with test_engine.connect():
-            pass
-        test_engine.dispose()
-        print("[DB] Successfully connected to remote PostgreSQL!")
-        return url
-    except Exception as conn_err:
-        print(f"[DB WARNING] Remote database connection failed: {conn_err}. Seamlessly falling back to local SQLite.")
-        return f"sqlite:///{DB_PATH.as_posix()}"
+    return url
 
 app.config['SQLALCHEMY_DATABASE_URI'] = get_effective_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 db = SQLAlchemy(app)
@@ -628,30 +622,31 @@ from services.ai_diet_engine import generate_ai_diet_plan
 from services.ai_search_engine import process_ai_gym_query
 from services.ai_coach_engine import process_coach_command
 
-# Data loaders helper
+# Data loaders helper with in-memory caching for instantaneous response
+_CACHED_EXERCISES_DATA = None
+_CACHED_FOODS_DATA = None
+
 def get_exercises_data():
-    try:
-        db_exercises = Exercise.query.order_by(Exercise.id).all()
-        if db_exercises:
-            return [ex.to_dict() for ex in db_exercises]
-    except Exception:
-        pass
+    global _CACHED_EXERCISES_DATA
+    if _CACHED_EXERCISES_DATA is not None:
+        return _CACHED_EXERCISES_DATA
     p = BASE_DIR / "data" / "exercises.json"
-    if not p.exists(): return []
-    with open(p, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    if p.exists():
+        with open(p, 'r', encoding='utf-8') as f:
+            _CACHED_EXERCISES_DATA = json.load(f)
+            return _CACHED_EXERCISES_DATA
+    return []
 
 def get_foods_data():
-    try:
-        db_foods = Food.query.order_by(Food.id).all()
-        if db_foods:
-            return [fd.to_dict() for fd in db_foods]
-    except Exception:
-        pass
+    global _CACHED_FOODS_DATA
+    if _CACHED_FOODS_DATA is not None:
+        return _CACHED_FOODS_DATA
     p = BASE_DIR / "data" / "foods.json"
-    if not p.exists(): return []
-    with open(p, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    if p.exists():
+        with open(p, 'r', encoding='utf-8') as f:
+            _CACHED_FOODS_DATA = json.load(f)
+            return _CACHED_FOODS_DATA
+    return []
 
 def get_all_user_foods(user=None):
     base_foods = get_foods_data()
@@ -1255,15 +1250,6 @@ def init_app_database(app_instance):
 
 
 
-@app.before_request
-def ensure_tables_exist():
-    if not getattr(app, '_db_tables_ready', False):
-        try:
-            db.create_all()
-            app._db_tables_ready = True
-        except Exception as _tbl_err:
-            db.session.rollback()
-            print(f"[TABLE CHECK WARNING] {_tbl_err}")
 
 @app.errorhandler(500)
 def server_error(e):

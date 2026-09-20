@@ -237,6 +237,51 @@
                   <p class="font-extrabold text-emerald-300 text-sm mt-0.5 group-hover:scale-105 transition-transform">{{ ex.rest_seconds }}s ⏱️</p>
                 </button>
               </div>
+
+              <!-- Progressive Overload Set Logger -->
+              <div class="space-y-1.5 mt-2 mb-3 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 px-1 pb-1 border-b border-slate-900">
+                  <span class="flex items-center gap-1 text-white font-extrabold"><i data-lucide="zap" class="h-3 w-3 text-emerald-400"></i> OVERLOAD LOG</span>
+                  <span class="text-[9px] text-emerald-400 font-mono">Weight (kg) × Reps</span>
+                </div>
+                <div class="space-y-1 pt-1" id="set-logger-{{ ex.id }}">
+                  {% for s in range(1, (ex.sets or 3) + 1) %}
+                  <div class="flex items-center justify-between gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800/80 text-xs font-mono" id="set-row-{{ ex.id }}-{{ s }}">
+                    <span class="text-slate-400 font-bold text-[10px] w-12">SET {{ s }}</span>
+                    <div class="flex items-center gap-1">
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="kg"
+                        id="weight-{{ ex.id }}-{{ s }}"
+                        oninput="saveSetProgressiveLog({{ ex.id }}, {{ s }})"
+                        class="w-14 bg-slate-950 border border-slate-700 text-center text-white text-xs py-0.5 rounded focus:border-emerald-500 focus:outline-none"
+                      />
+                      <span class="text-[9px] text-slate-500">kg</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <input
+                        type="number"
+                        placeholder="{{ ex.reps or 10 }}"
+                        id="reps-{{ ex.id }}-{{ s }}"
+                        oninput="saveSetProgressiveLog({{ ex.id }}, {{ s }})"
+                        class="w-12 bg-slate-950 border border-slate-700 text-center text-white text-xs py-0.5 rounded focus:border-emerald-500 focus:outline-none"
+                      />
+                      <span class="text-[9px] text-slate-500">reps</span>
+                    </div>
+                    <button
+                      type="button"
+                      id="check-set-{{ ex.id }}-{{ s }}"
+                      onclick="completeSetWithTimer({{ ex.id }}, {{ s }}, {{ ex.sets or 3 }}, {{ ex.rest_seconds or 60 }}, '{{ ex.name|replace('\'', '\\\'') }}')"
+                      class="h-6 w-6 rounded-md bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-400 text-xs flex items-center justify-center border border-slate-700 transition-all font-bold"
+                      title="Log set and start rest timer"
+                    >
+                      ✓
+                    </button>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
             </div>
 
             <!-- Card Actions -->
@@ -1491,6 +1536,9 @@
       if (floatTimerSeconds > 0) {
         floatTimerSeconds--;
         updateDisp();
+        if (floatTimerSeconds <= 3 && floatTimerSeconds > 0) {
+          if (window.FitSyncAudio) window.FitSyncAudio.playTimerBeep(false);
+        }
       } else {
         clearInterval(floatTimerInterval);
         floatTimerInterval = null;
@@ -1499,6 +1547,15 @@
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       }
     }, 1000);
+  }
+
+  function playChimeSound() {
+    if (window.FitSyncAudio) {
+      window.FitSyncAudio.playTimerBeep(true);
+      setTimeout(() => {
+        window.FitSyncAudio.playFinishFanfare();
+      }, 200);
+    }
   }
 
   function addFloatingTime(sec) {
@@ -1523,6 +1580,100 @@
     const widget = document.getElementById('floating-rest-widget');
     if (widget) widget.classList.add('hidden');
   }
+
+  // ---------------------------------------------------------------------------
+  // PROGRESSIVE OVERLOAD SET LOGGER ENGINE
+  // ---------------------------------------------------------------------------
+  function getSetStorageKey(exId, setNum) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return `fitsync_set_${todayStr}_${exId}_${setNum}`;
+  }
+
+  function saveSetProgressiveLog(exId, setNum) {
+    const weightEl = document.getElementById(`weight-${exId}-${setNum}`);
+    const repsEl = document.getElementById(`reps-${exId}-${setNum}`);
+    const weight = weightEl ? weightEl.value : '';
+    const reps = repsEl ? repsEl.value : '';
+    const key = getSetStorageKey(exId, setNum);
+    
+    const existing = JSON.parse(localStorage.getItem(key) || '{}');
+    existing.weight = weight;
+    existing.reps = reps;
+    localStorage.setItem(key, JSON.stringify(existing));
+  }
+
+  function completeSetWithTimer(exId, setNum, totalSets, restSeconds, exName) {
+    saveSetProgressiveLog(exId, setNum);
+    const key = getSetStorageKey(exId, setNum);
+    const existing = JSON.parse(localStorage.getItem(key) || '{}');
+    existing.completed = !existing.completed;
+    localStorage.setItem(key, JSON.stringify(existing));
+
+    const btn = document.getElementById(`check-set-${exId}-${setNum}`);
+    const row = document.getElementById(`set-row-${exId}-${setNum}`);
+
+    if (existing.completed) {
+      if (btn) {
+        btn.classList.remove('bg-slate-800', 'text-slate-400');
+        btn.classList.add('bg-emerald-500', 'text-slate-950', 'font-black');
+      }
+      if (row) {
+        row.classList.add('border-emerald-500/50', 'bg-emerald-950/20');
+      }
+      if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
+      startFloatingRestTimer(restSeconds || 60, `${exName} (Set ${setNum})`);
+
+      // Check if all sets are completed
+      let allDone = true;
+      for (let s = 1; s <= totalSets; s++) {
+        const sKey = getSetStorageKey(exId, s);
+        const sData = JSON.parse(localStorage.getItem(sKey) || '{}');
+        if (!sData.completed) {
+          allDone = false;
+          break;
+        }
+      }
+      if (allDone) {
+        if (window.FitSyncAudio) window.FitSyncAudio.playFinishFanfare();
+      }
+    } else {
+      if (btn) {
+        btn.classList.remove('bg-emerald-500', 'text-slate-950', 'font-black');
+        btn.classList.add('bg-slate-800', 'text-slate-400');
+      }
+      if (row) {
+        row.classList.remove('border-emerald-500/50', 'bg-emerald-950/20');
+      }
+    }
+  }
+
+  function restoreSetProgressiveLogs() {
+    document.querySelectorAll('[id^="weight-"]').forEach(input => {
+      const parts = input.id.split('-');
+      if (parts.length === 3) {
+        const exId = parts[1];
+        const setNum = parts[2];
+        const key = getSetStorageKey(exId, setNum);
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        if (data.weight) input.value = data.weight;
+        const repsEl = document.getElementById(`reps-${exId}-${setNum}`);
+        if (repsEl && data.reps) repsEl.value = data.reps;
+        if (data.completed) {
+          const btn = document.getElementById(`check-set-${exId}-${setNum}`);
+          const row = document.getElementById(`set-row-${exId}-${setNum}`);
+          if (btn) {
+            btn.classList.remove('bg-slate-800', 'text-slate-400');
+            btn.classList.add('bg-emerald-500', 'text-slate-950', 'font-black');
+          }
+          if (row) {
+            row.classList.add('border-emerald-500/50', 'bg-emerald-950/20');
+          }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', restoreSetProgressiveLogs);
 
   {% if workout_day and workout_day.exercises %}
     {% set c_cnt = workout_day.exercises|selectattr('is_completed')|list|length %}

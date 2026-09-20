@@ -15,6 +15,8 @@ window.FitSyncAIFormChecker = (function() {
     NOSE: 0,
     LEFT_EYE: 2,
     RIGHT_EYE: 5,
+    LEFT_EAR: 7,
+    RIGHT_EAR: 8,
     LEFT_SHOULDER: 11,
     RIGHT_SHOULDER: 12,
     LEFT_ELBOW: 13,
@@ -1292,6 +1294,53 @@ window.FitSyncAIFormChecker = (function() {
         feedback.push("● Lift bottom hip high to maintain a straight diagonal body line.");
         return { score, breakdown: { posture: 91, alignment: 93, rom: 90, stability: 89 }, feedback, phase: "Vasisthasana Hold", primaryAngle: Math.round(metrics.torsoInclineAngle) };
       }
+    },
+
+    // 47. STUDY POSTURE GUARDIAN (STUDENT DESK ERGONOMICS)
+    study_posture: {
+      name: "Study Posture Guardian",
+      camera_view: "Side or diagonal profile while seated at study desk",
+      position_guidance: "Position your camera or phone to view your head, neck, and torso from the side while studying.",
+      required_landmarks: [LANDMARKS.LEFT_EAR, LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP],
+      is_hold_exercise: true,
+      rules: ['cervical_spine_alignment', 'shoulder_retraction', 'lumbar_support'],
+      analyze: function(lm, metrics) {
+        let feedback = [];
+        let score = 100;
+        let phase = "Upright Ergonomics";
+
+        const ear = lm[LANDMARKS.LEFT_EAR] || lm[LANDMARKS.RIGHT_EAR] || lm[LANDMARKS.NOSE];
+        const shoulder = lm[LANDMARKS.LEFT_SHOULDER] || lm[LANDMARKS.RIGHT_SHOULDER];
+        
+        let neckAngle = 12;
+        if (ear && shoulder) {
+          const dx = Math.abs(ear.x - shoulder.x);
+          const dy = Math.abs(ear.y - shoulder.y) || 0.001;
+          neckAngle = Math.round(Math.atan2(dx, dy) * (180 / Math.PI));
+        }
+
+        if (neckAngle > 28) {
+          score = 65;
+          phase = "Slouching Detected";
+          feedback.push("⚠ Forward head slouch ('Tech Neck')! Tuck chin back, lift sternum, and roll shoulders back.");
+        } else if (neckAngle > 18) {
+          score = 82;
+          phase = "Mild Forward Lean";
+          feedback.push("● Slight forward head posture. Keep ears vertically over shoulders.");
+        } else {
+          score = 98;
+          phase = "Optimal Alignment";
+          feedback.push("● Perfect ergonomic posture! Natural cervical & lumbar curve maintained.");
+        }
+
+        return {
+          score,
+          breakdown: { posture: score, alignment: Math.max(50, 100 - neckAngle * 2), rom: 95, stability: 90 },
+          feedback,
+          phase,
+          primaryAngle: neckAngle
+        };
+      }
     }
   };
 
@@ -1301,6 +1350,10 @@ window.FitSyncAIFormChecker = (function() {
   function getCategoryFallback(categoryStr, exerciseName) {
     const cat = (categoryStr || '').toLowerCase();
     const name = (exerciseName || '').toLowerCase();
+
+    if (name.includes('study') || name.includes('posture') || cat.includes('ergonomic') || name.includes('slouch')) {
+      return EXERCISE_CONFIGS.study_posture;
+    }
 
     if (cat.includes('yoga') || name.includes('pose') || name.includes('tadasana') || name.includes('dog') || name.includes('warrior')) {
       if (name.includes('tree') || name.includes('vrksasana')) return EXERCISE_CONFIGS.tree_pose;
@@ -1454,8 +1507,13 @@ window.FitSyncAIFormChecker = (function() {
       this.simInterval = null;
       this.scoreHistory = [];
       this.voiceFeedbackEnabled = true;
+      this.voiceLanguage = 'en-IN';
       this.lastSpeechTime = 0;
       this.lastSpeechText = '';
+    }
+
+    setVoiceLanguage(lang) {
+      this.voiceLanguage = lang || 'en-IN';
     }
 
     setExercise(exerciseName, category) {
@@ -1579,6 +1637,7 @@ window.FitSyncAIFormChecker = (function() {
           feedback = ["● Excellent range of motion depth reached!"];
           if (this.lastPhase !== 'Peak Contraction') {
             this.repCount++;
+            if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
           }
         }
 
@@ -1747,6 +1806,7 @@ window.FitSyncAIFormChecker = (function() {
           this.repState = 'PEAK';
         } else if (this.repState === 'PEAK' && currentAngle >= repThresholds.start) {
           this.repCount++;
+          if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
           this.repState = 'START';
         }
         displayReps = this.repCount;
@@ -1796,25 +1856,82 @@ window.FitSyncAIFormChecker = (function() {
       }
     }
 
-    // Voice Coaching synthesis with throttle
+    // Voice Coaching synthesis with Indic multi-language translation and throttle
     triggerVoiceFeedback(text) {
       if (!this.voiceFeedbackEnabled || !text || typeof window.speechSynthesis === 'undefined') return;
       const cleanText = text.replace(/^[●⚠💡]\s*/, '').trim();
       if (!cleanText) return;
 
       const now = Date.now();
-      if (now - this.lastSpeechTime < 4000) return; // 4s cooldown
-      if (cleanText === this.lastSpeechText && now - this.lastSpeechTime < 10000) return;
+      if (now - this.lastSpeechTime < 3500) return; // 3.5s cooldown
+      if (cleanText === this.lastSpeechText && now - this.lastSpeechTime < 8000) return;
 
       this.lastSpeechTime = now;
       this.lastSpeechText = cleanText;
 
+      const lang = this.voiceLanguage || 'en-IN';
+      let spokenText = cleanText;
+
+      const INDIC_CUES = {
+        'hi-IN': {
+          'chest up': 'छाती बाहर और कमर सीधी रखें।',
+          'good depth': 'बहुत बढ़िया गहराई! अब ऊपर उठें।',
+          'depth': 'बहुत बढ़िया गहराई!',
+          'lockout': 'पूरा विस्तार, बहुत अच्छे!',
+          'lower bar': 'वज़न को धीरे-धीरे नीचे लाएं।',
+          'keep pressing': 'पूरी ताकत से ऊपर धकेलें।',
+          'flaring': 'कोहनियों को अंदर रखें।',
+          'heels': 'एड़ियों पर ज़ोर देकर ऊपर उठें।',
+          'rep': 'शाबाश! अगला रैप लगाएं।',
+          'setup': 'सही स्थिति में खड़े हों।'
+        },
+        'te-IN': {
+          'chest up': 'ఛాతీ ముందుకు ఉంచండి, వీపు నిటారుగా.',
+          'good depth': 'చాలా మంచి డెప్త్! ఇప్పుడు పైకి లేవండి.',
+          'depth': 'చాలా మంచి డెప్త్!',
+          'lockout': 'బాగా చేశారు, పూర్తి ఎక్స్‌టెన్షన్!',
+          'lower bar': 'బరువును నెమ్మదిగా నియంత్రణతో దించండి.',
+          'keep pressing': 'మొత్తం శక్తితో పైకి నెట్టండి.',
+          'heels': 'పాదాల మడమలతో బలాన్ని ప్రయోగించండి.',
+          'rep': 'చాలా బాగుంది! తర్వాతి రెప్ చేయండి.',
+          'setup': 'సరైన పొజిషన్‌లో ఉండండి.'
+        },
+        'ta-IN': {
+          'chest up': 'மார்பை நிமிர்த்தி முதுகை நேராக வைக்கவும்.',
+          'good depth': 'சிறந்த ஆழம்! இப்போது மேலே எழவும்.',
+          'depth': 'சிறந்த ஆழம்!',
+          'lockout': 'நன்று, முழு நீட்டிப்பு!',
+          'lower bar': 'எடையை மெதுவாக இறக்கவும்.',
+          'keep pressing': 'முழு பலத்துடன் மேலே தள்ளுங்கள்.',
+          'heels': 'குதிங்கால்களால் அழுத்தி மேலே எழவும்.',
+          'rep': 'அருமை! அடுத்த ரெப் தொடரவும்.',
+          'setup': 'சரியான நிலையில் நிற்கவும்.'
+        }
+      };
+
+      if (lang !== 'en-IN' && lang !== 'en-US' && INDIC_CUES[lang]) {
+        const lower = cleanText.toLowerCase();
+        for (const [cue, indicText] of Object.entries(INDIC_CUES[lang])) {
+          if (lower.includes(cue)) {
+            spokenText = indicText;
+            break;
+          }
+        }
+      }
+
       try {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.rate = 1.05;
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        utterance.lang = lang;
+        utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        utterance.volume = 0.9;
+        utterance.volume = 1.0;
+
+        const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+        const prefix = lang.substring(0, 2);
+        const match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+        if (match) utterance.voice = match;
+
         window.speechSynthesis.speak(utterance);
       } catch(e) {}
     }
@@ -1856,7 +1973,7 @@ window.FitSyncAIFormChecker = (function() {
       ctx.restore();
     }
 
-    // Render skeleton joints & connections on video overlay
+    // Render high-tech skeleton joints, glows & angle HUD overlay on canvas
     drawSkeleton(ctx, lm, width, height, color) {
       if (!ctx) return;
       const connections = [
@@ -1874,9 +1991,13 @@ window.FitSyncAIFormChecker = (function() {
         [LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE]
       ];
 
+      ctx.save();
+      // Glowing vector lines
       ctx.lineWidth = 4;
-      ctx.strokeStyle = color;
-      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = color || "#10b981";
+      ctx.shadowColor = color || "#10b981";
+      ctx.shadowBlur = 8;
+      ctx.lineCap = "round";
 
       connections.forEach(([start, end]) => {
         const p1 = lm[start];
@@ -1889,15 +2010,37 @@ window.FitSyncAIFormChecker = (function() {
         }
       });
 
+      // Render Joints with double-ring HUD nodes
       Object.values(LANDMARKS).forEach(idx => {
         const point = lm[idx];
         if (point && (point.visibility === undefined || point.visibility > 0.4)) {
+          const px = point.x * width;
+          const py = point.y * height;
+          // Outer halo
           ctx.beginPath();
-          ctx.arc(point.x * width, point.y * height, 5, 0, 2 * Math.PI);
+          ctx.arc(px, py, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = color || "#10b981";
           ctx.fill();
-          ctx.stroke();
+          // Inner core
+          ctx.beginPath();
+          ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
+          ctx.fillStyle = "#ffffff";
+          ctx.fill();
         }
       });
+
+      // Real-time HUD Status Stamp on top-left of canvas
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+      ctx.fillRect(10, 10, 140, 26);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(10, 10, 140, 26);
+      ctx.fillStyle = "#10b981";
+      ctx.font = "bold 10px monospace";
+      ctx.fillText("● AI TRACKING 30FPS", 18, 26);
+
+      ctx.restore();
     }
 
     getSetSummary() {

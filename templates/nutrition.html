@@ -13,6 +13,24 @@
     </div>
     
     <div class="flex flex-wrap items-center gap-3">
+      <!-- Snap My Mess Plate Button -->
+      <button
+        onclick="openPlateScannerModal()"
+        class="flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all border border-cyan-500/40 shadow-md"
+      >
+        <i data-lucide="camera" class="h-4 w-4 text-cyan-400"></i>
+        📸 Snap Mess Plate
+      </button>
+
+      <!-- Hostel Mess Presets Button -->
+      <button
+        onclick="openHostelPresetsModal()"
+        class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors border border-amber-500/30 shadow"
+      >
+        <i data-lucide="utensils" class="h-4 w-4 text-amber-400"></i>
+        🍱 Hostel Presets
+      </button>
+
       <!-- Weekly Grocery List Button -->
       <button
         onclick="openGroceryListModal()"
@@ -110,6 +128,42 @@
         <div>
           <p class="font-bold">Limited available food items selected.</p>
           <p class="mt-0.5 leading-normal">Add custom foods or check more items as available in <a href="{{ url_for('settings') }}" class="underline font-bold text-amber-400 hover:text-white">Settings</a> for better meal variety.</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Protein Gap Booster Alert -->
+      {% if meal_plan and targets and meal_plan.total_protein < target_prot %}
+      {% set prot_gap = (target_prot - meal_plan.total_protein)|round(1) %}
+      <div class="p-4 bg-gradient-to-r from-indigo-950/90 via-purple-950/70 to-slate-900 border border-indigo-500/40 rounded-2xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-start gap-3">
+          <div class="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-400 shrink-0 border border-indigo-500/30 shadow-inner">
+            <i data-lucide="zap" class="h-5 w-5 fill-current"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-black text-white text-xs uppercase tracking-wider">⚡ Protein Gap Booster</span>
+              <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">{{ prot_gap }}g Short of Target</span>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+              Your logged meals provide <strong class="text-white">{{ meal_plan.total_protein }}g</strong> of your <strong class="text-white">{{ target_prot }}g</strong> target.
+              Close the gap for under ₹20: <span class="text-emerald-400 font-semibold">2 Boiled Eggs (+12g, ₹14)</span> or <span class="text-cyan-400 font-semibold">80g Bhuna Chana (+16g, ₹12)</span>.
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onclick="quickAddBoosterItem('Whole Boiled Eggs (2 pcs)', 12, 140, 14)"
+            class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow hover:scale-[1.02] flex items-center gap-1.5"
+          >
+            <span>+ Add 2 Eggs (₹14)</span>
+          </button>
+          <button
+            onclick="quickAddBoosterItem('Roasted Chana / Bhuna Chana', 16, 280, 12)"
+            class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all hover:border-slate-600 flex items-center gap-1.5"
+          >
+            <span>+ Add Chana (₹12)</span>
+          </button>
         </div>
       </div>
       {% endif %}
@@ -585,6 +639,255 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!-- 1. AI MESS PLATE & THALI SCANNER MODAL     -->
+  <!-- ========================================== -->
+  <div id="plate-scanner-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-cyan-500/40 w-full max-w-xl rounded-3xl p-6 shadow-2xl space-y-5 text-slate-100 my-8">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/30">
+              <i data-lucide="camera" class="h-4 w-4"></i>
+            </span>
+            <h3 class="font-black text-lg text-white">AI Mess Plate & Thali Scanner</h3>
+          </div>
+          <p class="text-xs text-slate-400">Snap your Indian thali or mess plate — Multimodal AI detects items, macros & rupee cost.</p>
+        </div>
+        <button onclick="closePlateScannerModal()" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+      </div>
+
+      <!-- Meal Type & Mode Selection -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-bold text-slate-300">Logging for:</label>
+          <select id="plate-meal-type" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-500">
+            <option value="Lunch" selected>🍛 Lunch</option>
+            <option value="Dinner">🍲 Dinner</option>
+            <option value="Breakfast">🥞 Breakfast</option>
+            <option value="Snacks">⚡ Evening Snack</option>
+          </select>
+        </div>
+        <div class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          Gemini Vision Ready
+        </div>
+      </div>
+
+      <!-- Viewfinder / Preview Frame -->
+      <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center min-h-[220px]">
+        <!-- Video element for live camera -->
+        <video id="plate-camera-video" playsinline autoplay muted class="w-full max-h-64 object-cover hidden"></video>
+        
+        <!-- Canvas for snapshot extraction -->
+        <canvas id="plate-snapshot-canvas" class="hidden"></canvas>
+        
+        <!-- Image element for captured or uploaded photo -->
+        <img id="plate-photo-preview" class="w-full max-h-64 object-cover hidden rounded-2xl border border-cyan-500/30" alt="Food Plate Preview">
+
+        <!-- Standby placeholder -->
+        <div id="plate-standby-placeholder" class="text-center p-8 space-y-2 select-none">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <i data-lucide="image" class="h-7 w-7"></i>
+          </div>
+          <p class="font-bold text-sm text-white">Capture or Upload Meal Photo</p>
+          <p class="text-xs text-slate-400 max-w-xs">Supports thalis, dal-roti, rice bowls, eggs, snacks & canteen plates.</p>
+        </div>
+      </div>
+
+      <!-- Camera / Upload Actions -->
+      <div class="flex flex-wrap items-center gap-2 justify-between">
+        <div class="flex items-center gap-2">
+          <!-- Start Webcam Button -->
+          <button
+            id="btn-start-camera"
+            type="button"
+            onclick="startPlateCamera()"
+            class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all"
+          >
+            <i data-lucide="video" class="h-3.5 w-3.5 text-cyan-400"></i>
+            <span>Live Camera</span>
+          </button>
+
+          <!-- Snap Photo Button (shown when camera active) -->
+          <button
+            id="btn-capture-photo"
+            type="button"
+            onclick="capturePlateSnapshot()"
+            class="hidden px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-1.5 transition-all"
+          >
+            <i data-lucide="aperture" class="h-3.5 w-3.5"></i>
+            <span>Take Snap</span>
+          </button>
+
+          <!-- File Upload Trigger -->
+          <input type="file" id="plate-file-input" accept="image/*" class="hidden" onchange="handlePlateFileUpload(event)">
+          <button
+            type="button"
+            onclick="document.getElementById('plate-file-input').click()"
+            class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all"
+          >
+            <i data-lucide="upload" class="h-3.5 w-3.5 text-emerald-400"></i>
+            <span>Upload Photo</span>
+          </button>
+        </div>
+
+        <!-- Scan Button -->
+        <button
+          id="btn-run-plate-scan"
+          type="button"
+          onclick="runPlateScanAnalysis()"
+          disabled
+          class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 text-xs font-black rounded-xl shadow-lg transition-all flex items-center gap-2"
+        >
+          <i data-lucide="sparkles" class="h-4 w-4 fill-current"></i>
+          <span>Scan Food Plate</span>
+        </button>
+      </div>
+
+      <!-- Analysis Results Section (Populated dynamically) -->
+      <div id="plate-scan-results" class="hidden space-y-3 pt-4 border-t border-slate-800">
+        <!-- Will be filled by renderPlateScanResult() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. HOSTEL MESS REGIONAL PRESETS MODAL      -->
+  <!-- ========================================== -->
+  <div id="hostel-presets-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-2xl rounded-3xl p-6 shadow-2xl space-y-5 text-slate-100 my-8">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+              <i data-lucide="utensils" class="h-4 w-4"></i>
+            </span>
+            <h3 class="font-black text-lg text-white">Hostel Mess Regional Presets</h3>
+          </div>
+          <p class="text-xs text-slate-400">1-Click authentic Indian hostel meals engineered for high protein on a student budget.</p>
+        </div>
+        <button onclick="closeHostelPresetsModal()" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+      </div>
+
+      <!-- Meal slot selector -->
+      <div class="flex items-center justify-between bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+        <span class="text-xs font-bold text-slate-300">Apply selected preset to:</span>
+        <select id="preset-meal-target" class="bg-slate-900 border border-slate-700 text-amber-400 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none">
+          <option value="Lunch" selected>🍛 Today's Lunch</option>
+          <option value="Dinner">🍲 Today's Dinner</option>
+          <option value="Breakfast">🥞 Today's Breakfast</option>
+          <option value="Snacks">⚡ Evening Snack</option>
+        </select>
+      </div>
+
+      <!-- Presets Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[55vh] overflow-y-auto pr-1">
+        
+        <!-- Preset 1: North Indian Thali -->
+        <div class="bg-slate-950/80 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 space-y-3 transition-all flex flex-col justify-between group shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">🍛 North Indian</span>
+              <span class="text-xs font-bold text-emerald-400 font-mono">₹55</span>
+            </div>
+            <h4 class="font-black text-white text-sm">North Indian Hostel Mess Thali</h4>
+            <p class="text-[11px] text-slate-400 leading-snug">3 Chapatis, Dal Tadka, Rajma Masala, Steamed Rice & Fresh Curd.</p>
+            
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] bg-slate-900/90 p-2 rounded-xl border border-slate-800 font-mono">
+              <div><span class="text-slate-500 text-[8px] block">CALS</span><strong class="text-white">680</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">PROT</span><strong class="text-cyan-400">27.5g</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">CARB</span><strong class="text-amber-400">108g</strong></div>
+            </div>
+          </div>
+          <button
+            onclick="applyHostelPreset('north_indian_mess')"
+            class="w-full py-2 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/30 transition-all shadow"
+          >
+            Apply to Meal
+          </button>
+        </div>
+
+        <!-- Preset 2: South Indian Feast -->
+        <div class="bg-slate-950/80 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 space-y-3 transition-all flex flex-col justify-between group shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">🥞 South Indian</span>
+              <span class="text-xs font-bold text-emerald-400 font-mono">₹45</span>
+            </div>
+            <h4 class="font-black text-white text-sm">South Indian Mess Feast</h4>
+            <p class="text-[11px] text-slate-400 leading-snug">2 Idlis / Dosas with Vegetable Sambar, Coconut Chutney & Rasam Rice.</p>
+            
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] bg-slate-900/90 p-2 rounded-xl border border-slate-800 font-mono">
+              <div><span class="text-slate-500 text-[8px] block">CALS</span><strong class="text-white">590</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">PROT</span><strong class="text-cyan-400">18.5g</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">CARB</span><strong class="text-amber-400">96g</strong></div>
+            </div>
+          </div>
+          <button
+            onclick="applyHostelPreset('south_indian_mess')"
+            class="w-full py-2 bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-emerald-300 font-bold text-xs rounded-xl border border-emerald-500/30 transition-all shadow"
+          >
+            Apply to Meal
+          </button>
+        </div>
+
+        <!-- Preset 3: High-Protein Student Special -->
+        <div class="bg-slate-950/80 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-4 space-y-3 transition-all flex flex-col justify-between group shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full">💪 54g Protein</span>
+              <span class="text-xs font-bold text-emerald-400 font-mono">₹65</span>
+            </div>
+            <h4 class="font-black text-white text-sm">High-Protein Student Special</h4>
+            <p class="text-[11px] text-slate-400 leading-snug">3 Boiled Eggs, Soya Chunks Curry, 2 Rotis & Roasted Peanut Chaat.</p>
+            
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] bg-slate-900/90 p-2 rounded-xl border border-slate-800 font-mono">
+              <div><span class="text-slate-500 text-[8px] block">CALS</span><strong class="text-white">760</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">PROT</span><strong class="text-cyan-400">54.0g</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">CARB</span><strong class="text-amber-400">72g</strong></div>
+            </div>
+          </div>
+          <button
+            onclick="applyHostelPreset('high_protein_student')"
+            class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-xs rounded-xl transition-all shadow"
+          >
+            Apply to Meal
+          </button>
+        </div>
+
+        <!-- Preset 4: Hostel Evening Energy Pack -->
+        <div class="bg-slate-950/80 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 space-y-3 transition-all flex flex-col justify-between group shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">⚡ ₹25 Budget</span>
+              <span class="text-xs font-bold text-emerald-400 font-mono">₹25</span>
+            </div>
+            <h4 class="font-black text-white text-sm">Hostel Evening Energy Pack</h4>
+            <p class="text-[11px] text-slate-400 leading-snug">100g Roasted Chana (Bhuna Chana), 1 Ripe Banana & Low-Sugar Chai.</p>
+            
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] bg-slate-900/90 p-2 rounded-xl border border-slate-800 font-mono">
+              <div><span class="text-slate-500 text-[8px] block">CALS</span><strong class="text-white">440</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">PROT</span><strong class="text-cyan-400">22.5g</strong></div>
+              <div><span class="text-slate-500 text-[8px] block">CARB</span><strong class="text-amber-400">76g</strong></div>
+            </div>
+          </div>
+          <button
+            onclick="applyHostelPreset('budget_student_snack')"
+            class="w-full py-2 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/30 transition-all shadow"
+          >
+            Apply to Meal
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
@@ -914,6 +1217,11 @@
     }
   }
 
+  // -----------------------------------------------------------------------------
+  // GROCERY LIST & WHATSAPP EXPORTER
+  // -----------------------------------------------------------------------------
+  let cachedGroceryData = null;
+
   async function openGroceryListModal() {
     let modal = document.getElementById('grocery-list-modal');
     if (!modal) {
@@ -921,26 +1229,51 @@
       modal.id = 'grocery-list-modal';
       modal.className = 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4';
       modal.innerHTML = `
-        <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 text-slate-100">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 class="font-black text-lg text-white flex items-center gap-2">🛒 Weekly Hostel Grocery List</h3>
-            <button onclick="document.getElementById('grocery-list-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            <h3 class="font-black text-lg text-white flex items-center gap-2">
+              <i data-lucide="shopping-cart" class="h-5 w-5 text-emerald-400"></i>
+              Weekly Hostel Grocery List
+            </h3>
+            <button onclick="document.getElementById('grocery-list-modal').classList.add('hidden')" class="text-slate-400 hover:text-white text-lg">✕</button>
           </div>
-          <div id="grocery-modal-body" class="text-xs text-slate-300 space-y-3 min-h-[120px] flex items-center justify-center">
+          <div id="grocery-modal-body" class="text-xs text-slate-300 space-y-3 min-h-[140px] flex items-center justify-center">
             <p class="text-slate-400 font-semibold animate-pulse">Generating your 7-day grocery list...</p>
           </div>
-          <div class="pt-3 border-t border-slate-800 flex justify-end">
-            <button onclick="document.getElementById('grocery-list-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl">Close</button>
+          <div id="grocery-modal-footer" class="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <button
+              id="whatsapp-share-btn"
+              onclick="shareGroceryToWhatsApp()"
+              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow"
+            >
+              <span>📱 Share to WhatsApp</span>
+            </button>
+            <div class="flex items-center gap-2">
+              <button
+                onclick="window.print()"
+                class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-colors"
+              >
+                🖨️ Print
+              </button>
+              <button
+                onclick="document.getElementById('grocery-list-modal').classList.add('hidden')"
+                class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       `;
       document.body.appendChild(modal);
     }
     modal.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
     
     try {
       const res = await fetch('/api/diet/grocery-list');
       const data = await res.json();
+      cachedGroceryData = data;
       const body = document.getElementById('grocery-modal-body');
       body.className = 'text-xs text-slate-300 space-y-3';
       
@@ -968,6 +1301,318 @@
       `;
     } catch(err) {
       console.error(err);
+    }
+  }
+
+  function shareGroceryToWhatsApp() {
+    if (!cachedGroceryData || !cachedGroceryData.items) return;
+    let text = `🛒 *FitSync AI — Weekly Hostel Grocery List*\n\n`;
+    cachedGroceryData.items.forEach(item => {
+      text += `• *${item.name}* (${item.servings} portions) — ~₹${item.weekly_cost}\n`;
+    });
+    text += `\n💰 *Est. Total:* ₹${cachedGroceryData.total_est_cost} (Budget: ₹${cachedGroceryData.weekly_budget})\n`;
+    text += `💡 *Tip:* ${cachedGroceryData.pro_tip || 'Buy in bulk to save!'}\n\n_Generated by FitSync AI_`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  // -----------------------------------------------------------------------------
+  // PROTEIN GAP QUICK BOOSTER
+  // -----------------------------------------------------------------------------
+  async function quickAddBoosterItem(foodName, protein, calories, cost) {
+    if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
+    try {
+      const res = await fetch('/api/nutrition/log-scanned-plate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meal_type: 'Snacks',
+          dish_name: foodName,
+          total_calories: calories,
+          total_protein: protein,
+          total_carbs: 6,
+          total_fat: 5,
+          estimated_cost_inr: cost
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        if (window.FitSyncAudio) window.FitSyncAudio.playFinishFanfare();
+        window.location.reload();
+      } else {
+        alert(data.message || 'Failed to add booster food.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to server.');
+    }
+  }
+
+  // -----------------------------------------------------------------------------
+  // AI MESS PLATE SCANNER CONTROLLERS
+  // -----------------------------------------------------------------------------
+  let plateCameraStream = null;
+  let activePlateBase64 = null;
+  let scannedPlateData = null;
+
+  function openPlateScannerModal() {
+    document.getElementById('plate-scanner-modal').classList.remove('hidden');
+    resetPlateScannerUI();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function closePlateScannerModal() {
+    stopPlateCamera();
+    document.getElementById('plate-scanner-modal').classList.add('hidden');
+    resetPlateScannerUI();
+  }
+
+  function resetPlateScannerUI() {
+    activePlateBase64 = null;
+    scannedPlateData = null;
+    document.getElementById('plate-camera-video').classList.add('hidden');
+    document.getElementById('plate-photo-preview').classList.add('hidden');
+    document.getElementById('plate-photo-preview').src = '';
+    document.getElementById('plate-standby-placeholder').classList.remove('hidden');
+    document.getElementById('btn-capture-photo').classList.add('hidden');
+    document.getElementById('btn-start-camera').classList.remove('hidden');
+    document.getElementById('btn-run-plate-scan').disabled = true;
+    document.getElementById('plate-scan-results').classList.add('hidden');
+    document.getElementById('plate-scan-results').innerHTML = '';
+  }
+
+  async function startPlateCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      plateCameraStream = stream;
+      const video = document.getElementById('plate-camera-video');
+      video.srcObject = stream;
+      video.classList.remove('hidden');
+      document.getElementById('plate-photo-preview').classList.add('hidden');
+      document.getElementById('plate-standby-placeholder').classList.add('hidden');
+      document.getElementById('btn-capture-photo').classList.remove('hidden');
+      document.getElementById('btn-start-camera').classList.add('hidden');
+    } catch (err) {
+      console.warn("Webcam access failed or denied:", err);
+      alert("Unable to access camera. Please allow camera permissions or use 'Upload Photo'.");
+    }
+  }
+
+  function stopPlateCamera() {
+    if (plateCameraStream) {
+      plateCameraStream.getTracks().forEach(t => t.stop());
+      plateCameraStream = null;
+    }
+    const video = document.getElementById('plate-camera-video');
+    if (video) video.srcObject = null;
+  }
+
+  function capturePlateSnapshot() {
+    const video = document.getElementById('plate-camera-video');
+    const canvas = document.getElementById('plate-snapshot-canvas');
+    if (!video || !canvas) return;
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    activePlateBase64 = canvas.toDataURL('image/jpeg', 0.85);
+    stopPlateCamera();
+
+    const preview = document.getElementById('plate-photo-preview');
+    preview.src = activePlateBase64;
+    preview.classList.remove('hidden');
+    video.classList.add('hidden');
+    document.getElementById('btn-capture-photo').classList.add('hidden');
+    document.getElementById('btn-start-camera').classList.remove('hidden');
+    document.getElementById('btn-run-plate-scan').disabled = false;
+
+    if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
+  }
+
+  function handlePlateFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    stopPlateCamera();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      activePlateBase64 = e.target.result;
+      const preview = document.getElementById('plate-photo-preview');
+      preview.src = activePlateBase64;
+      preview.classList.remove('hidden');
+      document.getElementById('plate-camera-video').classList.add('hidden');
+      document.getElementById('plate-standby-placeholder').classList.add('hidden');
+      document.getElementById('btn-capture-photo').classList.add('hidden');
+      document.getElementById('btn-start-camera').classList.remove('hidden');
+      document.getElementById('btn-run-plate-scan').disabled = false;
+      if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function runPlateScanAnalysis() {
+    if (!activePlateBase64) return;
+    const scanBtn = document.getElementById('btn-run-plate-scan');
+    const originalText = scanBtn.innerHTML;
+    scanBtn.disabled = true;
+    scanBtn.innerHTML = `<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i><span>Analyzing Food...</span>`;
+    if (window.lucide) lucide.createIcons();
+
+    const mealType = document.getElementById('plate-meal-type').value;
+
+    try {
+      const res = await fetch('/api/ai/scan-food-plate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: activePlateBase64,
+          meal_type: mealType
+        })
+      });
+      const data = await res.json();
+      scannedPlateData = data;
+      renderPlateScanResult(data, mealType);
+      if (window.FitSyncAudio) window.FitSyncAudio.playFinishFanfare();
+    } catch (err) {
+      console.error(err);
+      alert("Plate scan analysis failed. Please try again.");
+    } finally {
+      scanBtn.disabled = false;
+      scanBtn.innerHTML = originalText;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  function renderPlateScanResult(data, mealType) {
+    const container = document.getElementById('plate-scan-results');
+    container.classList.remove('hidden');
+
+    const itemsHTML = (data.items || []).map(item => `
+      <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+        <div>
+          <span class="font-bold text-white block">${item.name}</span>
+          <span class="text-[10px] text-slate-400 font-mono">${item.portion || ''} • ${item.protein}g protein</span>
+        </div>
+        <div class="flex items-center gap-3 text-right">
+          <span class="font-mono text-white text-xs">${item.calories} kcal</span>
+          <span class="font-mono text-emerald-400 text-xs font-bold">₹${item.cost || 0}</span>
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="bg-slate-950/90 rounded-2xl p-4 border border-cyan-500/30 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="font-black text-white text-sm">${data.dish_name || 'Detected Plate'}</h4>
+            <span class="text-[10px] text-slate-400 font-mono">${data.source || 'FitSync AI Vision'}</span>
+          </div>
+          <span class="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-black text-xs px-2.5 py-1 rounded-full">
+            Score: ${data.health_rating || '8.5/10'}
+          </span>
+        </div>
+
+        <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+          ${itemsHTML}
+        </div>
+
+        <!-- Totals summary grid -->
+        <div class="grid grid-cols-4 gap-2 text-center text-xs font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+          <div><span class="text-[8px] text-slate-500 block">TOTAL CALS</span><strong class="text-white">${data.total_calories}</strong></div>
+          <div><span class="text-[8px] text-slate-500 block">PROTEIN</span><strong class="text-cyan-400">${data.total_protein}g</strong></div>
+          <div><span class="text-[8px] text-slate-500 block">CARBS</span><strong class="text-amber-400">${data.total_carbs}g</strong></div>
+          <div><span class="text-[8px] text-slate-500 block">EST. COST</span><strong class="text-emerald-400">₹${data.estimated_cost_inr}</strong></div>
+        </div>
+
+        <p class="text-[11px] text-slate-300 leading-relaxed bg-slate-900/50 p-2.5 rounded-xl border border-slate-800">
+          💡 <span class="font-semibold text-white">AI Coach Tip:</span> ${data.feedback || 'Balanced meal.'}
+        </p>
+
+        <button
+          onclick="logScannedMealToPlan()"
+          class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+        >
+          <i data-lucide="check" class="h-4 w-4"></i>
+          <span>Log to ${mealType} Tracker</span>
+        </button>
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function logScannedMealToPlan() {
+    if (!scannedPlateData) return;
+    const mealType = document.getElementById('plate-meal-type').value;
+
+    try {
+      const res = await fetch('/api/nutrition/log-scanned-plate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meal_type: mealType,
+          dish_name: scannedPlateData.dish_name || 'Scanned Mess Plate',
+          total_calories: scannedPlateData.total_calories || 500,
+          total_protein: scannedPlateData.total_protein || 20,
+          total_carbs: scannedPlateData.total_carbs || 80,
+          total_fat: scannedPlateData.total_fat || 12,
+          estimated_cost_inr: scannedPlateData.estimated_cost_inr || 50
+        })
+      });
+      const result = await res.json();
+      if (res.ok && result.status === 'success') {
+        if (window.FitSyncAudio) window.FitSyncAudio.playFinishFanfare();
+        closePlateScannerModal();
+        window.location.reload();
+      } else {
+        alert(result.message || 'Failed to log scanned meal.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving meal to today’s plan.');
+    }
+  }
+
+  // -----------------------------------------------------------------------------
+  // HOSTEL MESS REGIONAL PRESETS CONTROLLER
+  // -----------------------------------------------------------------------------
+  function openHostelPresetsModal() {
+    document.getElementById('hostel-presets-modal').classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function closeHostelPresetsModal() {
+    document.getElementById('hostel-presets-modal').classList.add('hidden');
+  }
+
+  async function applyHostelPreset(presetKey) {
+    const mealType = document.getElementById('preset-meal-target').value;
+    if (window.FitSyncAudio) window.FitSyncAudio.playRepDing();
+
+    try {
+      const res = await fetch('/api/nutrition/apply-hostel-preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          preset_key: presetKey,
+          meal_type: mealType
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        if (window.FitSyncAudio) window.FitSyncAudio.playFinishFanfare();
+        closeHostelPresetsModal();
+        window.location.reload();
+      } else {
+        alert(data.message || 'Failed to apply hostel preset.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error applying hostel preset.');
     }
   }
 </script>

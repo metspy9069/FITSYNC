@@ -44,6 +44,21 @@
         <i data-lucide="volume-2" id="voice-icon" class="h-4 w-4"></i> <span id="voice-label">Voice ON</span>
       </button>
 
+      <!-- Indic Voice Language Selector -->
+      <div class="relative inline-block">
+        <select
+          id="voice-language-select"
+          onchange="changeVoiceLanguage(this.value)"
+          class="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-emerald-500/50 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-emerald-500 cursor-pointer shadow transition-colors"
+          title="Select AI Voice Coach Language"
+        >
+          <option value="en-IN" selected>🌐 English (Indian)</option>
+          <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+          <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+          <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+        </select>
+      </div>
+
       <button
         type="button"
         onclick="openScorecardModal()"
@@ -71,6 +86,26 @@
         </div>
         
         <div class="space-y-2 text-xs font-semibold max-h-[380px] overflow-y-auto pr-1">
+          <!-- Special Mode: Student Study Posture Guardian -->
+          <button
+            type="button"
+            onclick="selectExercise('Study Posture Guardian', 'study_posture', 'Study Posture Guardian', 'Ergonomics')"
+            id="btn-ex-study-posture"
+            class="ex-selector-btn w-full text-left p-3 rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/50 to-blue-950/40 hover:border-cyan-400 text-white font-bold transition-all shadow-md group flex items-center justify-between gap-2"
+          >
+            <div class="flex items-center gap-2.5">
+              <span class="text-base p-1.5 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/30">🪑</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-black text-white text-xs group-hover:text-cyan-400 transition-colors">Study Posture Guardian</span>
+                  <span class="text-[9px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 rounded">Desk AI</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-normal">Real-time neck flexion angle & slouch alert.</p>
+              </div>
+            </div>
+            <span class="text-xs text-cyan-400 group-hover:scale-110 transition-transform shrink-0">▶</span>
+          </button>
+
           {% if exercises %}
             {% for ex in exercises %}
               {% set slug = ex.name|lower|replace(' ', '_')|replace('-', '_') %}
@@ -335,6 +370,12 @@
       if (vLabel) vLabel.innerText = "Voice Muted";
       if (vBtn) vBtn.className = "flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-500 border border-slate-800 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-colors";
       if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
+    }
+  }
+
+  function changeVoiceLanguage(lang) {
+    if (window.FitSyncAIFormChecker) {
+      window.FitSyncAIFormChecker.setVoiceLanguage(lang);
     }
   }
 

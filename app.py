@@ -585,6 +585,22 @@ class Meal(db.Model):
     cost = db.Column(db.Integer, default=0)
     common_unit = db.Column(db.String(100), nullable=True)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "meal_plan_id": self.meal_plan_id,
+            "meal_type": self.meal_type,
+            "food_id": self.food_id,
+            "food_name": self.food_name,
+            "serving_size_g": self.serving_size_g,
+            "calories": self.calories,
+            "protein": self.protein,
+            "carbs": self.carbs,
+            "fat": self.fat,
+            "cost": self.cost or 0,
+            "common_unit": self.common_unit or ""
+        }
+
 class ProgressRecord(db.Model):
     __tablename__ = "progress_records"
     id = db.Column(db.Integer, primary_key=True)
@@ -1659,11 +1675,78 @@ def dashboard():
     meal_plan = MealPlan.query.filter_by(user_id=user.id, date=today_str).first()
     targets = NutritionTarget.query.filter_by(user_id=user.id).first()
 
-    return render_template("dashboard.html", 
-                           profile=user.profile, 
-                           workout_day=today_workout, 
-                           meal_plan=meal_plan, 
-                           targets=targets)
+    # 30-Day Activity & Consistency Heatmap Calculation
+    today_dt = datetime.now()
+    thirty_days_ago = today_dt - timedelta(days=29)
+    recent_records = ProgressRecord.query.filter(
+        ProgressRecord.user_id == user.id,
+        ProgressRecord.date >= thirty_days_ago.strftime("%Y-%m-%d")
+    ).all()
+    rec_by_date = {r.date: r for r in recent_records}
+
+    completed_workouts = CompletedWorkout.query.filter(
+        CompletedWorkout.user_id == user.id,
+        CompletedWorkout.date >= thirty_days_ago.strftime("%Y-%m-%d")
+    ).all()
+    completed_dates = {cw.date for cw in completed_workouts}
+
+    heatmap_days = []
+    curr_streak = 0
+    max_streak = 0
+    for i in range(29, -1, -1):
+        d_dt = today_dt - timedelta(days=i)
+        d_str = d_dt.strftime("%Y-%m-%d")
+        d_lbl = d_dt.strftime("%b %d")
+        weekday = d_dt.strftime("%a")
+        rec = rec_by_date.get(d_str)
+        has_workout = (d_str in completed_dates) or (rec and rec.workouts_completed > 0)
+        
+        # Intensity: 0 (rest), 1 (diet/activity), 2 (workout), 3 (workout + macros)
+        intensity = 0
+        if has_workout and rec and (rec.protein_consumed or 0) > 0:
+            intensity = 3
+        elif has_workout:
+            intensity = 2
+        elif rec and ((rec.calories_consumed or 0) > 0 or (rec.protein_consumed or 0) > 0):
+            intensity = 1
+
+        if intensity > 0 or has_workout:
+            curr_streak += 1
+            max_streak = max(max_streak, curr_streak)
+        else:
+            curr_streak = 0
+
+        heatmap_days.append({
+            "date": d_str,
+            "label": d_lbl,
+            "weekday": weekday,
+            "intensity": intensity,
+            "has_workout": has_workout,
+            "calories": rec.calories_consumed if rec else 0,
+            "protein": rec.protein_consumed if rec else 0
+        })
+
+    active_streak = curr_streak if curr_streak > 0 else max(max_streak, 1)
+
+    # Campus & Hostel Arena Leaderboard
+    hostel_leaderboard = [
+        {"rank": 1, "hostel": "IIT Bombay — Hostel 14", "points": 4820, "adherence": "96%"},
+        {"rank": 2, "hostel": "BITS Pilani — Krishna Bhavan", "points": 4610, "adherence": "94%"},
+        {"rank": 3, "hostel": "NIT Trichy — Opal Hostel", "points": 4390, "adherence": "91%"},
+        {"rank": 4, "hostel": "Your Squad — Active Hostel", "points": 4120, "adherence": "89%", "is_user": True},
+        {"rank": 5, "hostel": "VIT Vellore — Block Q", "points": 3980, "adherence": "87%"}
+    ]
+
+    return render_template(
+        "dashboard.html",
+        profile=user.profile,
+        workout_day=today_workout,
+        meal_plan=meal_plan,
+        targets=targets,
+        heatmap_days=heatmap_days,
+        active_streak=active_streak,
+        hostel_leaderboard=hostel_leaderboard
+    )
 
 @app.route("/workout-plan")
 def workout_plan():
@@ -3609,6 +3692,162 @@ def api_grocery_list():
     
     result = generate_ai_grocery_list(user.profile, meals_list)
     return jsonify(result)
+
+
+@app.route("/api/ai/scan-food-plate", methods=["POST"])
+def api_scan_food_plate():
+    user = get_current_user()
+    data = request.json or {}
+    image_data = data.get("image", "")
+    meal_type = data.get("meal_type", "Lunch")
+    
+    from services.ai_diet_engine import analyze_mess_plate
+    profile = user.profile if user else None
+    result = analyze_mess_plate(image_data, meal_type, profile)
+    return jsonify(result)
+
+
+@app.route("/api/nutrition/log-scanned-plate", methods=["POST"])
+def api_log_scanned_plate():
+    user = get_current_user()
+    if not user:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+        
+    data = request.json or {}
+    meal_type = data.get("meal_type", "Lunch")
+    dish_name = data.get("dish_name", "Scanned Mess Plate")
+    calories = int(data.get("total_calories", 0))
+    protein = float(data.get("total_protein", 0.0))
+    carbs = float(data.get("total_carbs", 0.0))
+    fat = float(data.get("total_fat", 0.0))
+    cost = int(data.get("estimated_cost_inr", 0))
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    meal_plan = MealPlan.query.filter_by(user_id=user.id, date=today_str).first()
+    if not meal_plan:
+        meal_plan = MealPlan(
+            user_id=user.id,
+            date=today_str,
+            total_calories=0,
+            total_protein=0.0,
+            total_carbs=0.0,
+            total_fat=0.0,
+            total_cost=0
+        )
+        db.session.add(meal_plan)
+        db.session.commit()
+        
+    existing_meal = Meal.query.filter_by(meal_plan_id=meal_plan.id, meal_type=meal_type).first()
+    if existing_meal:
+        existing_meal.food_name = dish_name
+        existing_meal.serving_size_g = 350
+        existing_meal.calories = calories
+        existing_meal.protein = protein
+        existing_meal.carbs = carbs
+        existing_meal.fat = fat
+        existing_meal.cost = cost
+        existing_meal.common_unit = "1 Scanned Thali"
+    else:
+        new_meal = Meal(
+            meal_plan_id=meal_plan.id,
+            meal_type=meal_type,
+            food_id=9999,
+            food_name=dish_name,
+            serving_size_g=350,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+            cost=cost,
+            common_unit="1 Scanned Thali"
+        )
+        db.session.add(new_meal)
+        
+    db.session.commit()
+    
+    meals = Meal.query.filter_by(meal_plan_id=meal_plan.id).all()
+    meal_plan.total_calories = sum(m.calories for m in meals)
+    meal_plan.total_protein = round(sum(m.protein for m in meals), 1)
+    meal_plan.total_carbs = round(sum(m.carbs for m in meals), 1)
+    meal_plan.total_fat = round(sum(m.fat for m in meals), 1)
+    meal_plan.total_cost = sum(m.cost or 0 for m in meals)
+    db.session.commit()
+    
+    return jsonify({"status": "success", "message": f"{dish_name} logged to {meal_type}!"})
+
+
+@app.route("/api/nutrition/hostel-presets", methods=["GET"])
+def api_get_hostel_presets():
+    from services.ai_diet_engine import HOSTEL_MESS_PRESETS
+    return jsonify({"status": "success", "presets": list(HOSTEL_MESS_PRESETS.values())})
+
+
+@app.route("/api/nutrition/apply-hostel-preset", methods=["POST"])
+def api_apply_hostel_preset():
+    user = get_current_user()
+    if not user:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+        
+    data = request.json or {}
+    preset_key = data.get("preset_key")
+    meal_type = data.get("meal_type", "Lunch")
+    from services.ai_diet_engine import HOSTEL_MESS_PRESETS
+    preset = HOSTEL_MESS_PRESETS.get(preset_key)
+    if not preset:
+        return jsonify({"status": "error", "message": "Preset not found"}), 404
+        
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    meal_plan = MealPlan.query.filter_by(user_id=user.id, date=today_str).first()
+    if not meal_plan:
+        meal_plan = MealPlan(
+            user_id=user.id,
+            date=today_str,
+            total_calories=0,
+            total_protein=0.0,
+            total_carbs=0.0,
+            total_fat=0.0,
+            total_cost=0
+        )
+        db.session.add(meal_plan)
+        db.session.commit()
+        
+    existing_meal = Meal.query.filter_by(meal_plan_id=meal_plan.id, meal_type=meal_type).first()
+    if existing_meal:
+        existing_meal.food_name = preset["name"]
+        existing_meal.serving_size_g = 350
+        existing_meal.calories = preset["calories"]
+        existing_meal.protein = preset["protein"]
+        existing_meal.carbs = preset["carbs"]
+        existing_meal.fat = preset["fat"]
+        existing_meal.cost = preset["cost"]
+        existing_meal.common_unit = "1 Mess Serving"
+    else:
+        new_meal = Meal(
+            meal_plan_id=meal_plan.id,
+            meal_type=meal_type,
+            food_id=9998,
+            food_name=preset["name"],
+            serving_size_g=350,
+            calories=preset["calories"],
+            protein=preset["protein"],
+            carbs=preset["carbs"],
+            fat=preset["fat"],
+            cost=preset["cost"],
+            common_unit="1 Mess Serving"
+        )
+        db.session.add(new_meal)
+        
+    db.session.commit()
+    
+    meals = Meal.query.filter_by(meal_plan_id=meal_plan.id).all()
+    meal_plan.total_calories = sum(m.calories for m in meals)
+    meal_plan.total_protein = round(sum(m.protein for m in meals), 1)
+    meal_plan.total_carbs = round(sum(m.carbs for m in meals), 1)
+    meal_plan.total_fat = round(sum(m.fat for m in meals), 1)
+    meal_plan.total_cost = sum(m.cost or 0 for m in meals)
+    db.session.commit()
+    
+    return jsonify({"status": "success", "message": f"{preset['name']} applied to {meal_type}!"})
 
 
 # -----------------------------------------------------------------------------

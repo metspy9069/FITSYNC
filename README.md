@@ -1,117 +1,156 @@
-# FitSync AI — "Your lifestyle. Your fitness plan."
+# 🥗 FitSync AI — "Your Lifestyle. Your Fitness Plan."
 
-FitSync AI is an adaptive fitness and nutrition planning web platform designed specifically around the constraints of college students. Built as a unified platform presentation, it launches with a single command and includes a 5–7 minute interactive demonstration.
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Framework-Flask-black?logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![Database](https://img.shields.io/badge/Database-SQLite%20/%20SQLAlchemy-003B57?logo=sqlite&logoColor=white)](https://www.sqlalchemy.org)
+[![Computer Vision](https://img.shields.io/badge/AI-OpenCV%20/%20Pose%20Estimation-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org)
+[![Tailwind CSS](https://img.shields.io/badge/UI-Tailwind%20CSS-06B6D4?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**FitSync AI** is an intelligent, adaptive fitness and nutritional planning platform designed specifically around the daily realities, budget constraints, and dining halls of collegiate students. 
+
+Unlike conventional fitness apps that deliver static templates, FitSync AI continuously mutates each student's weekly exercise schedule and meal plan based on hostel grocery budgets, dining hall food availability, exam schedules, and equipment accessibility.
 
 ---
 
 ## 💡 The Core Innovation
 
-> **"Unlike generic fitness applications that provide fixed workout and diet plans, FitSync AI generates and continuously adapts a student's fitness and nutrition plan according to personal goals, lifestyle, food availability, nutritional targets, budget, workout constraints, and progress."**
+> *"Unlike generic fitness applications that mandate expensive gym memberships and rigid diets, FitSync AI personalizes routines based on hostel constraints: swap expensive proteins for local Indian staples, shift missed workouts around exams without guilt, and verify exercise biomechanics directly via your browser webcam."*
 
 ---
 
-## 🚀 Key Adaptive Features
+## 🌟 Key Adaptive Features
 
-1. **Equipment Aware**: If a student changes constraints (e.g. selecting "No Equipment" or "Dumbbells only"), the fitness engine alters their weekly routine to only recommend suitable bodyweight or free weight movements.
-2. **Hostel & Budget Friendly**: Meals are composed using common Indian college food staples. If a primary ingredient is too expensive or unavailable (e.g., eggs or paneer), the user can click **Swap** to find cheap, macro-similar alternatives like roasted chana, milk, or lentils.
-3. **Missed Workout Shifting**: Exam or laboratory commitments can disrupt workouts. Instead of marking days as permanently missed, clicking **Rebuild Remaining Week** moves the incomplete workout to the upcoming chronological rest days, preventing overload.
-4. **AI Pose Checker**: Built-in computer vision utilizing webcam feeds calculates posture joint angles for squats, push-ups, and bicep curls, with zero video data storage for maximum student privacy. Has a built-in virtual simulator fallback in case cameras are denied.
+### 🏋️ Context & Equipment-Aware Workout Engine
+* **Dynamic Constraint Scaling**: Switch instantly between "Full Gym", "Dumbbells Only", and "Hostel Room / Bodyweight Only". The engine immediately regenerates workouts using available resistance.
+* **Smart Exam & Missed Day Shifting**: Missed a workout due to exams or labs? The **Rebuild Remaining Week** algorithm automatically rolls pending sets into upcoming rest days without causing muscular overload.
+* **Biomechanics Guides**: Step-by-step kinetic movement breakdowns and rep tempos for 24+ foundational exercises.
+
+### 🍱 Hostel & Indian Budget-Friendly Nutrition
+* **Affordable Protein Swaps**: Designed around real Indian college food staples. If eggs or paneer are unavailable or over budget, tap **Swap** to replace them with macro-equivalent alternatives (e.g. roasted chana, sattu, curd, or lentils).
+* **Macro & Micronutrient Split**: Automatic calorie and macronutrient breakdown calculated from your basal metabolic rate (BMR) and activity level.
+* **Portion Estimator**: Practical measurement guides (katori, spoons, glasses) suited for hostel messes.
+
+### 👁️ AI Computer Vision Pose Checker
+* **Zero-Latency In-Browser Vision**: Real-time joint angle calculation for squats, push-ups, and bicep curls via webcam.
+* **100% Privacy-Preserving**: Video stream frames are processed purely client-side; zero video or photo data is ever transmitted or stored on servers.
+* **Virtual Simulator Fallback**: Built-in test simulator mode for development or environments without camera access.
+
+---
+
+## 🏛️ System Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│             Responsive Web Frontend                    │
+│   Jinja2 Templates • Tailwind CSS • Chart.js • Lucide  │
+└───────────────┬────────────────────────┬───────────────┘
+                │                        │
+         HTTP Form Submissions    Webcam Video Feed
+                │                        │
+                ▼                        ▼
+┌────────────────────────────────────────────────────────┐
+│                   Flask Core Engine                    │
+│   • Auth & Session Manager (Flask-Login)               │
+│   • Adaptive Meal Engine (Macro Swapper)               │
+│   • Schedule Rebuild & Rest-Day Shifting Algorithm     │
+│   • Computer Vision Pose Estimation (OpenCV / MediaPipe)
+└───────────────┬────────────────────────────────────────┘
+                │
+                ▼
+┌────────────────────────────────────────────────────────┐
+│              SQLite & SQLAlchemy Models                │
+│    Users • Workouts • Completed Logs • Nutrition Plan  │
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 📂 Project Structure
 
 ```
-FitSync-AI/
-│
-├── app.py                     # Flask Application, SQLite config, and browser opener
-├── requirements.txt           # Python dependencies (Flask, Flask-SQLAlchemy, etc.)
-├── run.bat                    # One-click Windows setup launcher script
-├── test_app.py                # Unified automated testing suite
-│
-├── templates/                 # Jinja2 HTML templates
-│   ├── base.html              # Layout shell (CDNs for Tailwind/Lucide/Chart.js)
-│   ├── index.html             # Landing page
-│   ├── login.html             # Login
-│   ├── register.html          # Registration
-│   ├── onboarding.html        # 9-step onboarding wizard
-│   ├── dashboard.html         # User dashboard
-│   ├── today_workout.html     # Exercise checklists & webcam overlays
-│   ├── workout_plan.html      # Weekly schedule
-│   ├── exercise_library.html  # Search & filters
-│   ├── exercise_detail.html   # Biomechanics guides
-│   ├── form_check.html        # Standalone CV analyzer page
-│   ├── nutrition.html         # Daily food schedules & macro overrides
-│   ├── meal_detail.html       # Portion macro splits
-│   ├── progress.html          # Chart.js graphs & weight logging
-│   ├── profile.html           # BMI stats
-│   └── settings.html          # Config links
-│
-├── static/                    # Frontend static assets
-│   ├── css/
-│   │   └── style.css          # UI scrollbars and animations
-│   └── js/                    # Client page fetch triggers
-│
+FITSYNC/
+├── app.py                     # Flask application entry point, routing & DB setup
+├── test_app.py                # Automated integration and unit test suite
+├── requirements.txt           # Python dependencies
+├── run.bat                    # One-click Windows setup & launcher script
 ├── data/                      # Global seed assets
-│   ├── exercises.json         # 24 muscular movements
-│   └── foods.json             # 22 Indian student staples
-│
-├── instance/                  # Generated database folder
-│   └── fitsync.db             # Local SQLite database file
-│
-├── services/                  # Calculation business logic
-│   ├── fitness_engine.py      # Workout splits generator
-│   ├── nutrition_engine.py    # Caloric models & food substitutions
-│   ├── adaptation_engine.py   # Rescheduling engines
-│   └── form_analysis.py       # CV angle analytics & mock coordinate generator
-│
-└── docs/                      # Documentation
-    ├── ARCHITECTURE.md
-    ├── SETUP.md
-    ├── FEATURES.md
-    ├── DEMO_GUIDE.md
-    └── FINAL_STATUS.md
+│   ├── exercises.json         # 24 core resistance movements
+│   └── foods.json             # 22 budget-friendly student food staples
+├── templates/                 # Jinja2 HTML views
+│   ├── base.html              # Shell layout with Tailwind & CDN scripts
+│   ├── index.html             # High-impact landing page
+│   ├── onboarding.html        # 9-step assessment wizard
+│   ├── dashboard.html         # Main overview & quick actions
+│   ├── today_workout.html     # Interactive checklist with timer
+│   ├── workout_plan.html      # 7-day adaptive split
+│   ├── form_check.html        # Real-time computer vision pose analyzer
+│   ├── nutrition.html         # Daily meal plan & macro tracker
+│   └── progress.html          # Weight trends & visual analytics
+├── static/                    # CSS animations & client scripts
+│   ├── css/style.css
+│   └── js/
+└── instance/                  # Local SQLite database (`fitsync.db`)
 ```
 
 ---
 
-## 🛠️ Setup Instructions (Windows PowerShell)
+## 🚀 Getting Started
 
-Ensure you have **Python 3.10+** installed on your Windows laptop.
+### Prerequisites
+* **Python**: Version `3.10` or higher ([python.org](https://python.org))
+* **Git**: Installed on your system
 
-### Easy Setup: One-Click Launcher
-Double-click **`run.bat`** in the project root folder. The script automatically sets up the python virtual environment, installs dependencies, seeds the database, starts the server, and launches the browser.
-
-### Manual Command Line Setup
-Open a PowerShell terminal window in the project root:
-
-```powershell
-# 1. Create python virtual environment
-python -m venv venv
-
-# 2. Activate virtual environment
-.\venv\Scripts\Activate.ps1
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Start the application
-python app.py
+### One-Click Windows Launch
+Simply double-click `run.bat` or run:
+```cmd
+run.bat
 ```
-Open `http://127.0.0.1:5000` in Google Chrome or Microsoft Edge (it opens automatically on boot).
+*This automatically sets up a Python virtual environment, installs dependencies, initializes the database, and opens your browser.*
+
+### Manual Installation
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/hasitha0604-2006/FITSYNC.git
+   cd FITSYNC
+   ```
+
+2. **Create and Activate Virtual Environment**
+   ```bash
+   # Windows
+   python -m venv .venv
+   .venv\Scripts\activate
+
+   # Linux / macOS
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Launch Application**
+   ```bash
+   python app.py
+   ```
+   Open **`http://localhost:5000`** in your browser.
 
 ---
 
-## 🎥 Recommended 5-Minute Demo Flow
+## 🧪 Testing
 
-1. **Access Portal**: Run `python app.py`. The browser will automatically open `http://127.0.0.1:5000`.
-2. **One-Click Demo Login**: Click **Sign In**. Click the **Fill Demo** button to pre-fill the form with credentials:
-   - **Email:** `demo@fitsync.ai`
-   - **Password:** `Demo@123`
-   Click **Sign In** to log in instantly.
-3. **Inspect Dashboard**: Verify that the daily checklist contains calories, protein bars, active workout days (e.g. Chest + Triceps), and today's meal summaries.
-4. **Test Food Substitution**: Navigate to the **Nutrition Plan** tab. Select **Boiled Eggs** -> click **Swap** -> choose reason "Food unavailable" -> witness the engine replace it with a cheap protein source (like roasted chana) while preserving the macro budget!
-5. **Test Exercise Substitution**: Navigate to **Today's Workout** tab. Select **Bench Press** -> click **Swap** -> choose "No equipment" -> check the replacement to **Push-ups** targeting the same chest muscle group.
-6. **Test AI Form Check**: Click **AI Form** next to Squat or Push-up. Agree to the privacy explanation. If webcam is available, perform the exercise and see angles check. If webcam is blocked/absent, the UI falls back to the **Virtual AI Simulator** showing real-time coordinate waves without crashing.
-7. **Reschedule Missed Routines**: Click **Rebuild Remaining Week** on the Workout page. The engine will shift incomplete routines to rest days.
-8. **Check Progress Analytics**: Go to **Progress Tracking** -> log weight -> check the Chart.js graphs rendering your weekly calorie compliance and weight loss/gain curve.
+FitSync AI includes an automated test suite verifying auth flows, nutrition swaps, and workout shifting:
+```bash
+python -m pytest test_app.py
+# or
+python test_app.py
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
